@@ -133,7 +133,7 @@ function switchView(viewName) {
   if (targetView) targetView.classList.add("active");
 
   const titles = {
-    schedule: { title: "📅 1. Meeting Schedule & Booking", sub: "Upcoming calls, pre-meeting memory recall, and 1-click Google Calendar booking" },
+    schedule: { title: "📅 1. Today Meeting & Follow Up", sub: "Upcoming calls, pre-meeting memory recall, and 1-click Google Calendar follow-up booking" },
     studio: { title: "🎙️ 2. Live Speech & AI Summary", sub: "Real-time Google Meet captions, scratchpad, Gemini commitments, and Google Sheets sync" },
     clients: { title: "👥 3. Clients & Memories", sub: "Manage client dossiers, past meetings, and full extension transcripts" }
   };
