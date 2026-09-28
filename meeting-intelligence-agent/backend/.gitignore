@@ -1,0 +1,15 @@
+# Environment & Secrets (NEVER COMMIT)
+.env
+.env.*
+!.env.example
+credentials.json
+token.json
+
+# Virtual Environment
+venv/
+.venv/
+
+# Caches
+__pycache__/
+*.pyc
+.pytest_cache/

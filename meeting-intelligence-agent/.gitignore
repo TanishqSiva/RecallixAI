@@ -1,0 +1,38 @@
+# Environment & Secrets (NEVER COMMIT)
+.env
+.env.*
+!.env.example
+*.env
+credentials.json
+token.json
+backend/.env
+backend/.env.production
+backend/credentials.json
+backend/token.json
+
+# Python Virtual Environments
+venv/
+.venv/
+backend/venv/
+
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Pytest & Testing
+.pytest_cache/
+backend/.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs & Databases
+*.log
+*.sqlite3
+
+# OS & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

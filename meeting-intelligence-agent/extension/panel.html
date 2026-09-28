@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meeting Intelligence Agent</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Header -->
+    <header class="header">
+      <div class="logo-row">
+        <div class="logo-badge">⚡ Hindsight AI</div>
+        <div class="status-indicator" id="connectionStatus" title="Backend Status">
+          <span class="dot"></span>
+          <span class="status-text">Backend: Checking...</span>
+        </div>
+      </div>
+      <h1 class="app-title">Meeting Intelligence Agent</h1>
+      <p class="subtitle">Autonomous Prep, Live Capture & Post-Call Automation</p>
+
+      <div class="session-bar">
+        <div class="session-item">
+          <label for="userIdInput">User ID:</label>
+          <input type="text" id="userIdInput" value="alex@example.com" placeholder="Your User ID / Email" />
+        </div>
+        <div class="session-item">
+          <label for="attendeeEmailInput">Attendee:</label>
+          <input type="text" id="attendeeEmailInput" value="sarah.connor@acme.org" placeholder="attendee@company.com" />
+        </div>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button class="tab-btn active" data-tab="tab-prep">
+        <span class="tab-icon">📋</span>
+        <span>1. Pre-Meeting</span>
+      </button>
+      <button class="tab-btn" data-tab="tab-live">
+        <span class="tab-icon">🎙️</span>
+        <span>2. Live & Notes</span>
+        <span class="badge" id="captionCountBadge">0</span>
+      </button>
+      <button class="tab-btn" data-tab="tab-action">
+        <span class="tab-icon">⚡</span>
+        <span>3. Wrap & Action</span>
+      </button>
+    </nav>
+
+    <!-- TAB 1: Pre-Meeting Briefing -->
+    <section id="tab-prep" class="tab-content active">
+      <div class="section-card">
+        <div class="card-header">
+          <h3>Upcoming Calendar Meetings</h3>
+          <button class="btn btn-secondary btn-sm" id="btnRefreshCalendar">↻ Sync Calendar</button>
+        </div>
+        <div id="upcomingMeetingsContainer" class="upcoming-list">
+          <div class="placeholder-text">Checking Google Calendar for meetings in next 15 mins...</div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="card-header">
+          <h3>Hindsight Memory Briefing</h3>
+          <button class="btn btn-primary btn-sm" id="btnFetchBriefing">Recall Memory</button>
+        </div>
+        <p class="section-desc">Queries Vectorize Hindsight bank for past commitments, unresolved threads, and relationship history.</p>
+        
+        <div id="briefingLoading" class="loader-container" style="display: none;">
+          <div class="spinner"></div>
+          <span>Synthesizing recall context via Hindsight SDK...</span>
+        </div>
+
+        <div id="briefingResult" class="briefing-box">
+          <div class="placeholder-text">Click "Recall Memory" or select an upcoming meeting above to generate pre-meeting briefing.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: Live Captions & Scratchpad -->
+    <section id="tab-live" class="tab-content">
+      <div class="split-view">
+        <!-- Live Caption Feed -->
+        <div class="pane captions-pane">
+          <div class="pane-header">
+            <div class="feed-title">
+              <span class="pulse-indicator"></span>
+              <h4>Live Google Meet Captions</h4>
+            </div>
+            <div class="pane-actions">
+              <button class="btn btn-ghost btn-sm" id="btnAutoScroll" title="Toggle Auto-Scroll">Scroll: ON</button>
+              <button class="btn btn-ghost btn-sm" id="btnClearCaptions" title="Clear Captions">Clear</button>
+              <button class="btn btn-ghost btn-sm" id="btnSimulateCaption" title="Simulate Captions for Testing">+ Mock Line</button>
+            </div>
+          </div>
+          
+          <div class="caption-notice" id="captionHelpNotice">
+            💡 <em>Zero-Bot Client Scraper:</em> Ensure Google Meet closed captions are turned on (press 'c' in Meet).
+          </div>
+
+          <div class="captions-feed" id="captionsFeed">
+            <div class="placeholder-text">Waiting for spoken captions from Google Meet tab...</div>
+          </div>
+        </div>
+
+        <!-- Interactive Scratchpad -->
+        <div class="pane scratchpad-pane">
+          <div class="pane-header">
+            <h4>Interactive User Scratchpad</h4>
+            <div class="quick-tags">
+              <button class="tag-btn" data-insert="[Promise: ]">+ Promise</button>
+              <button class="tag-btn" data-insert="[Decision: ]">+ Decision</button>
+              <button class="tag-btn" data-insert="[Action: ]">+ Follow-up</button>
+            </div>
+          </div>
+          <p class="section-desc">Personal notes during call. The LLM will reconcile discrepancies between your notes and spoken words post-call.</p>
+          <textarea id="userScratchpad" class="scratchpad-textarea" placeholder="Type personal impressions, commitments you made, private thoughts, or offline agreements here..."></textarea>
+          <div class="scratchpad-footer">
+            <span id="scratchpadStatus">Saved locally</span>
+            <button class="btn btn-ghost btn-sm" id="btnLoadSampleDemo">Load Demo Scenario</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: Wrap Meeting & Action -->
+    <section id="tab-action" class="tab-content">
+      <div class="action-banner">
+        <div>
+          <h3>Ready to Conclude?</h3>
+          <p>Synthesizes transcript + notes, stores memory in Hindsight, and automates calendar follow-up.</p>
+        </div>
+        <button class="btn btn-accent btn-lg" id="btnWrapCall">
+          <span>🚀 Wrap Call & Analyze</span>
+        </button>
+      </div>
+
+      <div id="wrapLoading" class="loader-container" style="display: none;">
+        <div class="spinner"></div>
+        <span>Running Groq/Gemini synthesis and updating Hindsight Bank...</span>
+      </div>
+
+      <div id="analysisContainer" style="display: none;">
+        <!-- Memory Retention Confirmation -->
+        <div class="memory-badge-card" id="memoryRetentionBadge">
+          <div class="badge-icon">🧠</div>
+          <div class="badge-details">
+            <strong>Retained in Hindsight Memory Bank</strong>
+            <span id="retainedDocId">Bank: meeting-intel | Document: ...</span>
+          </div>
+        </div>
+
+        <!-- Post-Meeting Synthesis Cards -->
+        <div class="analysis-grid">
+          <!-- Summary -->
+          <div class="analysis-card full-width">
+            <div class="card-title">📌 Key Decisions & Summary</div>
+            <div id="analysisSummary" class="card-body"></div>
+          </div>
+
+          <!-- Commitments by Us -->
+          <div class="analysis-card">
+            <div class="card-title">🤝 Promises Made by Us (User)</div>
+            <ul id="analysisPromisesByUs" class="action-list"></ul>
+          </div>
+
+          <!-- Commitments by Them -->
+          <div class="analysis-card">
+            <div class="card-title">🎯 Promises Made by Attendees</div>
+            <ul id="analysisPromisesByThem" class="action-list"></ul>
+          </div>
+
+          <!-- Open Followups -->
+          <div class="analysis-card">
+            <div class="card-title">❓ Unresolved / Missed Follow-ups</div>
+            <ul id="analysisOpenFollowups" class="action-list"></ul>
+          </div>
+
+          <!-- Notes vs Captions Discrepancies -->
+          <div class="analysis-card">
+            <div class="card-title">🔍 Scratchpad vs. Spoken Discrepancies</div>
+            <ul id="analysisDiscrepancies" class="action-list"></ul>
+          </div>
+        </div>
+
+        <!-- 1-Click Google Calendar Follow-up -->
+        <div class="calendar-action-card">
+          <div class="card-header">
+            <h3>📅 Programmatic Google Calendar Follow-Up</h3>
+            <span class="tag-pill" id="suggestedDateTag">Suggested Date: Next Week</span>
+          </div>
+          <div class="calendar-form">
+            <div class="form-row">
+              <label>Event Title:</label>
+              <input type="text" id="calTitleInput" value="Follow-up: Review Pricing & Deliverables" />
+            </div>
+            <div class="form-row split">
+              <div>
+                <label>Date & Time (ISO):</label>
+                <input type="datetime-local" id="calDateTimeInput" />
+              </div>
+              <div>
+                <label>Duration (Minutes):</label>
+                <input type="number" id="calDurationInput" value="30" min="15" step="15" />
+              </div>
+            </div>
+            <div class="form-row">
+              <label>Attendees (Comma separated):</label>
+              <input type="text" id="calAttendeesInput" value="sarah.connor@acme.org" />
+            </div>
+            <div class="form-row">
+              <label>Auto-Generated Agenda (From Commitments):</label>
+              <textarea id="calAgendaInput" rows="3"></textarea>
+            </div>
+            <button class="btn btn-success btn-block" id="btnScheduleCalendar">
+              📅 Confirm & Schedule Follow-Up Event
+            </button>
+            <div id="scheduleSuccessNotice" class="success-notice" style="display: none;"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <span>Vectorize Hindsight + Google Calendar + Chrome MV3</span>
+      <button class="btn btn-link btn-xs" id="btnSettingsToggle">⚙️ Config</button>
+    </footer>
+
+    <!-- Settings Modal / Drawer -->
+    <div id="settingsModal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <h3>Configuration</h3>
+        <label>Backend API Base URL:</label>
+        <input type="text" id="backendUrlInput" value="http://localhost:8000" />
+        <div class="modal-actions">
+          <button class="btn btn-secondary btn-sm" id="btnCloseSettings">Close</button>
+          <button class="btn btn-primary btn-sm" id="btnSaveSettings">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="panel.js"></script>
+</body>
+</html>

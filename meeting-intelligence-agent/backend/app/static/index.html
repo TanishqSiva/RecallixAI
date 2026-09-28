@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meeting Intelligence Agent - Central Dashboard</title>
+  <link rel="stylesheet" href="/static/dashboard.css">
+</head>
+<body>
+  <div class="layout-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand-logo">
+          <span class="brand-icon">⚡</span>
+          <div class="brand-text">
+            <h2>Meeting Intel</h2>
+            <span class="brand-tag">Vectorize Hindsight</span>
+          </div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-view="view-schedule">
+          <span class="nav-icon">📅</span>
+          <span class="nav-label">Schedule & Briefings</span>
+        </button>
+        <button class="nav-item" data-view="view-studio">
+          <span class="nav-icon">🎙️</span>
+          <span class="nav-label">Live Studio & Notes</span>
+          <span class="nav-badge" id="streamBadge">LIVE</span>
+        </button>
+        <button class="nav-item" data-view="view-intelligence">
+          <span class="nav-icon">⚡</span>
+          <span class="nav-label">Post-Call Intelligence</span>
+        </button>
+        <button class="nav-item" data-view="view-contacts">
+          <span class="nav-icon">👥</span>
+          <span class="nav-label">Contact Dossiers</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="stream-status-card">
+          <div class="stream-indicator">
+            <span class="pulse-dot" id="streamPulse"></span>
+            <span class="stream-text" id="streamStatusText">Extension: Listening</span>
+          </div>
+          <small id="activeMeetingCode">Room: meet-demo-sync</small>
+        </div>
+        <div class="user-profile">
+          <div class="user-avatar">A</div>
+          <div class="user-info">
+            <span class="user-name">Alex Miller</span>
+            <span class="user-role">alex@example.com</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Top Bar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <h1 id="currentViewTitle">Today's Schedule & Pre-Call Briefings</h1>
+          <span class="topbar-sub" id="currentViewSubtitle">Autonomous context recall powered by Vectorize Hindsight Cloud</span>
+        </div>
+        <div class="topbar-right">
+          <button class="btn btn-secondary btn-sm" id="btnGlobalRefresh">↻ Refresh Data</button>
+          <button class="btn btn-primary btn-sm" id="btnLaunchStudioDirect">🎙️ Open Live Studio</button>
+        </div>
+      </header>
+
+      <!-- VIEW 1: Schedule & Briefings -->
+      <section id="view-schedule" class="dashboard-view active">
+        <div class="grid-two-col">
+          <!-- Left: Today's Meetings -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <h3>Today's Scheduled Calls</h3>
+                <span class="sub-text">Google Calendar API • Real-Time Sync</span>
+              </div>
+              <button class="btn btn-ghost btn-xs" id="btnRefreshCalendar">Sync Calendar</button>
+            </div>
+            <div class="card-body">
+              <div id="todayMeetingsList" class="schedule-list">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Pre-Meeting Briefing Card -->
+          <div class="card briefing-panel-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <h3>Pre-Meeting Intelligence Brief</h3>
+                <span class="sub-text" id="briefingContactName">Target: sarah.connor@acme.org</span>
+              </div>
+              <span class="hindsight-pill">🧠 Hindsight Recall</span>
+            </div>
+            <div class="card-body">
+              <div id="briefingLoading" class="loader-state" style="display: none;">
+                <div class="spinner"></div>
+                <p>Querying Vectorize Hindsight Bank for past commitments & agreements...</p>
+              </div>
+              <div id="briefingContent" class="briefing-content-box">
+                <!-- Dynamically populated -->
+              </div>
+              <div class="briefing-actions">
+                <button class="btn btn-accent btn-block" id="btnLaunchCallWithBrief">
+                  🎙️ Join & Launch Studio for this Meeting
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 2: Live Meeting Studio & Scratchpad -->
+      <section id="view-studio" class="dashboard-view">
+        <div class="studio-header-card">
+          <div class="studio-status-row">
+            <div class="studio-title-block">
+              <span class="live-pill">● LIVE INGESTION</span>
+              <h2 id="studioMeetingTitle">Strategy & Pricing Sync with Sarah Connor</h2>
+              <span class="meeting-id-pill" id="studioMeetingId">meet-demo-sync</span>
+            </div>
+            <div class="studio-tools">
+              <button class="btn btn-ghost btn-sm" id="btnSimulateDialogue" title="Simulate incoming caption">+ Simulate Line</button>
+              <button class="btn btn-ghost btn-sm" id="btnClearDialogue">Clear</button>
+              <button class="btn btn-accent btn-sm" id="btnStudioWrapMeeting">
+                🚀 Wrap & Analyze Meeting
+              </button>
+            </div>
+          </div>
+          <p class="studio-explainer">
+            Dialogue is streamed in real time from the <strong>Chrome Companion Extension</strong> using client-side closed caption observation. Notes taken in the scratchpad below are continuously reconciled by the LLM post-call.
+          </p>
+        </div>
+
+        <div class="studio-workspace">
+          <!-- Left: Real-time Transcript Stream -->
+          <div class="studio-pane dialogue-pane">
+            <div class="pane-header">
+              <h4>Live Spoken Transcript (Google Meet)</h4>
+              <span class="pane-meta" id="captionCount">5 utterances</span>
+            </div>
+            <div class="dialogue-feed" id="dialogueFeed">
+              <!-- Dynamically populated from /api/stream/session/{meeting_id} -->
+            </div>
+          </div>
+
+          <!-- Right: Interactive User Scratchpad -->
+          <div class="studio-pane scratchpad-pane">
+            <div class="pane-header">
+              <h4>Interactive User Scratchpad</h4>
+              <div class="quick-tags-group">
+                <button class="btn-tag" data-tag="[Promise: ]">+ Promise</button>
+                <button class="btn-tag" data-tag="[Decision: ]">+ Decision</button>
+                <button class="btn-tag" data-tag="[Action: ]">+ Follow-up</button>
+              </div>
+            </div>
+            <textarea id="studioScratchpad" class="studio-textarea" placeholder="Take private notes, impressions, or agreed offline commitments during the call..."></textarea>
+            <div class="scratchpad-statusbar">
+              <span id="scratchpadSaveStatus">● Synced with backend</span>
+              <button class="btn btn-link btn-xs" id="btnLoadDemoNotes">Reload Demo Notes</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 3: Post-Meeting Intelligence & Follow-up Center -->
+      <section id="view-intelligence" class="dashboard-view">
+        <div id="intelLoadingState" class="loader-state" style="display: none;">
+          <div class="spinner-large"></div>
+          <h3>Running Synthesis & Updating Hindsight Cloud</h3>
+          <p>Extracting commitments, analyzing note discrepancies, and retaining memories...</p>
+        </div>
+
+        <div id="intelMainContent">
+          <!-- Hindsight Confirmation Banner -->
+          <div class="memory-confirmation-banner">
+            <div class="banner-icon">🧠</div>
+            <div class="banner-text">
+              <h4>Retained in Vectorize Hindsight Memory Bank</h4>
+              <p id="hindsightMemoryDetails">Bank: bank_alex_example_com | Document: meet_demo_sync_1727500000</p>
+            </div>
+            <span class="badge-success">Encrypted & Grounded</span>
+          </div>
+
+          <!-- Structured Intelligence Grid -->
+          <div class="intel-grid">
+            <!-- Executive Summary -->
+            <div class="intel-card col-span-2">
+              <div class="intel-card-header">
+                <h4>📌 Executive Summary & Key Milestones</h4>
+              </div>
+              <div class="intel-card-body" id="intelSummary">
+                Meeting concluded. Key milestones and discussion highlights will be summarized here.
+              </div>
+            </div>
+
+            <!-- Promises Made by Us -->
+            <div class="intel-card">
+              <div class="intel-card-header highlight-blue">
+                <h4>🤝 Promises Made by Us (User Deliverables)</h4>
+              </div>
+              <ul class="intel-list" id="intelPromisesUs">
+                <li>I will send enterprise pricing sheet by Thursday 5 PM.</li>
+              </ul>
+            </div>
+
+            <!-- Promises Made by Them -->
+            <div class="intel-card">
+              <div class="intel-card-header highlight-purple">
+                <h4>🎯 Promises Made by Attendees</h4>
+              </div>
+              <ul class="intel-list" id="intelPromisesThem">
+                <li>Sarah will provide security compliance questionnaire by tomorrow morning.</li>
+              </ul>
+            </div>
+
+            <!-- Unresolved Action Items -->
+            <div class="intel-card">
+              <div class="intel-card-header highlight-amber">
+                <h4>❓ Unresolved Questions & Pending Follow-Ups</h4>
+              </div>
+              <ul class="intel-list" id="intelOpenFollowups">
+                <li>Clarify SLA commitments for 99.9% uptime.</li>
+              </ul>
+            </div>
+
+            <!-- Note Discrepancy Reconciliation -->
+            <div class="intel-card">
+              <div class="intel-card-header highlight-red">
+                <h4>🔍 Scratchpad vs. Spoken Discrepancies</h4>
+              </div>
+              <ul class="intel-list" id="intelDiscrepancies">
+                <li>Discrepancy: Scratchpad noted Friday pricing delivery, but spoken words agreed to Thursday 5 PM.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Proactive Follow-up Action Card -->
+          <div class="card followup-card">
+            <div class="followup-header">
+              <div class="followup-title">
+                <span class="calendar-icon">📅</span>
+                <div>
+                  <h3>Do you want to schedule the next meeting with <span id="followupAttendeeName">Sarah Connor</span>?</h3>
+                  <p>Agreed target reconnect date detected: <strong id="followupSuggestedDate">Next Tuesday at 2:00 PM</strong></p>
+                </div>
+              </div>
+            </div>
+
+            <div class="followup-form-grid">
+              <div class="form-group">
+                <label>Event Title</label>
+                <input type="text" id="followupTitle" value="Follow-up: Review Pricing & Deliverables" />
+              </div>
+              <div class="form-group">
+                <label>Date & Time (ISO)</label>
+                <input type="datetime-local" id="followupDateTime" />
+              </div>
+              <div class="form-group">
+                <label>Attendees</label>
+                <input type="text" id="followupAttendees" value="sarah.connor@acme.org" />
+              </div>
+              <div class="form-group">
+                <label>Duration (Minutes)</label>
+                <input type="number" id="followupDuration" value="30" step="15" />
+              </div>
+              <div class="form-group col-span-2">
+                <label>Auto-Filled Agenda (Derived from Commitments)</label>
+                <textarea id="followupAgenda" rows="3"></textarea>
+              </div>
+            </div>
+
+            <div class="followup-footer">
+              <button class="btn btn-success btn-lg" id="btnConfirmSchedule">
+                📅 Confirm & Schedule Next Meeting via Google Calendar
+              </button>
+              <div id="calendarSuccessBox" class="success-box" style="display: none;"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 4: Contact History / Hindsight Dossier -->
+      <section id="view-contacts" class="dashboard-view">
+        <div class="dossier-layout">
+          <!-- Contacts Sidebar -->
+          <div class="dossier-list-pane">
+            <div class="search-box">
+              <input type="text" id="contactSearchInput" placeholder="🔍 Search contacts in Hindsight..." />
+            </div>
+            <div class="contacts-list" id="contactsContainer">
+              <!-- Dynamically populated from /api/contacts -->
+            </div>
+          </div>
+
+          <!-- Contact Profile & Cumulative History -->
+          <div class="dossier-detail-pane">
+            <div id="dossierHeader" class="dossier-profile-header">
+              <div class="dossier-avatar" id="dossierAvatar">SC</div>
+              <div class="dossier-meta">
+                <h2 id="dossierContactName">Sarah Connor</h2>
+                <span id="dossierContactEmail">sarah.connor@acme.org</span>
+                <div class="dossier-tags">
+                  <span class="tag-pill" id="dossierMemoryCount">4 Memory Records</span>
+                  <span class="tag-pill">Bank: bank_alex_example_com</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="dossier-sections">
+              <!-- Cumulative Brief -->
+              <div class="card mb-4">
+                <div class="card-header">
+                  <h4>🧠 Cumulative Hindsight Relationship Context</h4>
+                </div>
+                <div class="card-body">
+                  <div id="dossierBriefing" class="dossier-text-content">
+                    Loading relationship history...
+                  </div>
+                </div>
+              </div>
+
+              <!-- Chronological Meeting Timeline -->
+              <div class="card">
+                <div class="card-header">
+                  <h4>📜 Chronological Meeting Memory Timeline</h4>
+                </div>
+                <div class="card-body">
+                  <div id="dossierTimeline" class="timeline-container">
+                    <!-- Dynamically populated -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/static/dashboard.js"></script>
+</body>
+</html>

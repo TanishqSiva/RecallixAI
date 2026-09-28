@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meeting Intelligence Companion</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 320px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+      padding: 16px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid #1e293b;
+      padding-bottom: 12px;
+    }
+    .logo-badge {
+      font-size: 20px;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      border-radius: 8px;
+      padding: 4px 8px;
+    }
+    .title-group h3 { font-size: 14px; color: #fff; }
+    .title-group span { font-size: 11px; color: #94a3b8; }
+    .status-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 14px;
+    }
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 6px #10b981;
+    }
+    .status-sub {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 6px;
+      border: none;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1, #ec4899);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+    }
+    .btn-primary:hover {
+      opacity: 0.95;
+      transform: translateY(-1px);
+    }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid #334155;
+      color: #94a3b8;
+      margin-top: 8px;
+      font-size: 11px;
+      padding: 6px;
+    }
+    .btn-ghost:hover { color: #fff; }
+    .settings-panel {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #1e293b;
+      display: none;
+    }
+    .settings-panel label { display: block; font-size: 10px; color: #94a3b8; margin-bottom: 4px; text-transform: uppercase; }
+    .settings-panel input { width: 100%; background: #080c18; border: 1px solid #334155; color: #fff; padding: 6px 8px; border-radius: 4px; font-size: 11px; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo-badge">⚡</div>
+    <div class="title-group">
+      <h3>Meeting Intel Companion</h3>
+      <span>Google Meet Closed Caption Ingestion</span>
+    </div>
+  </div>
+
+  <div class="status-card">
+    <div class="status-row">
+      <span class="status-dot" id="companionDot"></span>
+      <span id="companionStatus">Ready & Listening</span>
+    </div>
+    <div class="status-sub" id="companionMeetStatus">
+      Detects active Google Meet tabs automatically.
+    </div>
+  </div>
+
+  <button class="btn btn-primary" id="btnOpenDashboard">
+    🚀 Open Web Dashboard ↗
+  </button>
+
+  <button class="btn btn-ghost" id="btnToggleSettings">
+    ⚙️ Settings
+  </button>
+
+  <div class="settings-panel" id="settingsPanel">
+    <label for="backendUrl">Backend API URL</label>
+    <input type="text" id="backendUrl" value="http://localhost:8000" />
+    <button class="btn btn-primary" style="padding: 6px; font-size: 11px;" id="btnSaveSettings">Save URL</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

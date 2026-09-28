@@ -1,0 +1,16 @@
+services:
+  meeting-intel-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: meeting-intel-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - HINDSIGHT_API_URL=${HINDSIGHT_API_URL:-http://localhost:8888}
+      - HINDSIGHT_API_KEY=${HINDSIGHT_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash}
+      - GOOGLE_CALENDAR_CREDENTIALS_FILE=credentials.json
+      - GOOGLE_CALENDAR_TOKEN_FILE=token.json
+    restart: unless-stopped
