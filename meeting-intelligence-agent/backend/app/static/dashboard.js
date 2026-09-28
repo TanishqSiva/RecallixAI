@@ -107,10 +107,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 // Navigation Handling
 function setupNavigation() {
-  navItems.forEach(item => {
-    item.addEventListener("click", () => {
-      const viewKey = item.getAttribute("data-view").replace("view-", "");
-      switchView(viewKey);
+  const allNavs = document.querySelectorAll(".nav-item");
+  allNavs.forEach(item => {
+    item.addEventListener("click", (e) => {
+      e.preventDefault();
+      const attr = item.getAttribute("data-view");
+      if (attr) {
+        const viewKey = attr.replace("view-", "");
+        switchView(viewKey);
+      }
     });
   });
 
@@ -121,16 +126,20 @@ function setupNavigation() {
 }
 
 function switchView(viewName) {
-  navItems.forEach(b => b.classList.remove("active"));
-  Object.values(views).forEach(v => {
-    if (v) v.classList.remove("active");
-  });
+  const allNavs = document.querySelectorAll(".nav-item");
+  allNavs.forEach(b => b.classList.remove("active"));
+
+  const allViews = document.querySelectorAll(".dashboard-view");
+  allViews.forEach(v => v.classList.remove("active"));
 
   const targetNav = document.querySelector(`.nav-item[data-view="view-${viewName}"]`);
-  const targetView = views[viewName];
+  const targetView = document.getElementById(`view-${viewName}`);
 
   if (targetNav) targetNav.classList.add("active");
   if (targetView) targetView.classList.add("active");
+
+  const titleEl = document.getElementById("currentViewTitle");
+  const subtitleEl = document.getElementById("currentViewSubtitle");
 
   const titles = {
     schedule: { title: "📅 1. Today Meeting & Follow Up", sub: "Upcoming calls, pre-meeting memory recall, and 1-click Google Calendar follow-up booking" },
@@ -138,11 +147,13 @@ function switchView(viewName) {
     clients: { title: "👥 3. Clients & Memories", sub: "Manage client dossiers, past meetings, and full extension transcripts" }
   };
 
-  if (titles[viewName]) {
-    currentViewTitle.textContent = titles[viewName].title;
-    currentViewSubtitle.textContent = titles[viewName].sub;
+  if (titles[viewName] && titleEl && subtitleEl) {
+    titleEl.textContent = titles[viewName].title;
+    subtitleEl.textContent = titles[viewName].sub;
   }
 }
+
+window.switchView = switchView;
 
 // -------------------------------------------------------------
 // VIEW 1: Meeting Schedule & Calendar Booking

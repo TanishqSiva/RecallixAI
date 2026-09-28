@@ -21,16 +21,16 @@
       </div>
 
       <nav class="sidebar-nav">
-        <button class="nav-item active" data-view="view-schedule">
+        <button class="nav-item active" data-view="view-schedule" onclick="switchView('schedule')">
           <span class="nav-icon">📅</span>
           <span class="nav-label">1. Today Meeting & Follow Up</span>
         </button>
-        <button class="nav-item" data-view="view-studio">
+        <button class="nav-item" data-view="view-studio" onclick="switchView('studio')">
           <span class="nav-icon">🎙️</span>
           <span class="nav-label">2. Live Speech & AI Summary</span>
           <span class="nav-badge" id="streamBadge">LIVE</span>
         </button>
-        <button class="nav-item" data-view="view-clients">
+        <button class="nav-item" data-view="view-clients" onclick="switchView('clients')">
           <span class="nav-icon">👥</span>
           <span class="nav-label">3. Clients & Memories</span>
         </button>
