@@ -13,7 +13,7 @@ The **Meeting Intelligence Agent** is an autonomous, full-stack assistant that e
    - **During the call:** An interactive **Live Scratchpad** allows you to take private notes with quick tags (`+ Promise`, `+ Decision`, `+ Follow-up`), continuously auto-synced.
    - **After the call:** **Google Gemini** cross-reconciles what was actually spoken against what you typed in your scratchpad, highlighting discrepancies and structuring concrete deliverables.
 3. **Long-Term Memory (Vectorize Hindsight):** Retains commitments, relationship dynamics, and contact dossiers across time, automatically preparing proactive pre-meeting briefs before your next call.
-4. **Automated Follow-Up via n8n (Google Calendar + Gmail):** With 1 click, the agent triggers an **n8n automation webhook** that automatically schedules the follow-up on Google Calendar and sends meeting minutes directly to all attendees via Gmail.
+4. **Automated Follow-Up via n8n (Google Calendar + Gmail + Google Sheets):** With 1 click, the agent triggers **n8n automation webhooks** that automatically schedule the follow-up on Google Calendar, email meeting minutes directly to attendees via Gmail, and append action items to Google Sheets!
 
 ---
 
@@ -45,21 +45,124 @@ flowchart TD
     subgraph External ["Cloud Intelligence & Automations"]
         HindsightCloud[("Vectorize Hindsight Cloud\nLong-Term Contact Memory")]
         GeminiAPI["Google Gemini API\nStructured JSON Schema"]
-        n8nWebhook["n8n Webhook Trigger\n/webhook/meeting-followup"]
+        n8nMeeting["n8n Webhook: Book Meeting\n/webhook/create-meeting"]
+        n8nTasks["n8n Webhook: Sync Tasks\n/webhook/meeting-sync-tasks"]
         GCal["Google Calendar\n(Create Follow-up & Meet Link)"]
-        Gmail["Gmail API\n(Send Summary & Deliverables to Attendees)"]
+        Gmail["Gmail API\n(Send Confirmation & Summary)"]
+        GSheet["Google Sheets\n(Append Rows to 'Action Items')"]
 
         HindsightEngine <-->|Retain & Recall| HindsightCloud
         GeminiEngine <-->|Inference| GeminiAPI
-        ActionRouter -->|Trigger Webhook| n8nWebhook
-        n8nWebhook --> GCal
-        n8nWebhook --> Gmail
+        ActionRouter -->|Schedule Event| n8nMeeting
+        ActionRouter -->|Sync Tasks| n8nTasks
+        n8nMeeting --> GCal
+        n8nMeeting --> Gmail
+        n8nTasks --> GSheet
     end
 ```
 
 ---
 
-## 🌟 Key Features
+## 🎯 How to Test & Use the System (Step-by-Step)
+
+You can test this application in **two ways**: an **Instant 60-Second In-Dashboard Test** (no Google Meet call required), or a **Full Live Call with the Chrome Extension**.
+
+### Option 1: Instant In-Dashboard Test (60 Seconds)
+*Recommended for quick verification and hackathon judge demonstrations without needing a live partner.*
+
+1. **Open the Web Dashboard:**
+   Navigate to [http://localhost:8000/dashboard](http://localhost:8000/dashboard) in your browser.
+2. **Review Pre-Meeting Briefings (View 1):**
+   - Click on the first meeting card (*"Enterprise Pricing & Architecture Sync"*).
+   - Watch the agent fetch historical context, past promises, and attendee dossiers directly from **Vectorize Hindsight**.
+3. **Switch to Live Meeting Studio (View 2):**
+   - Click the **"Live Studio & Notes"** tab in the sidebar.
+   - Click the **"+ Simulate Line"** button 2 or 3 times to simulate incoming dialogue from a Google Meet call.
+   - Click **"Reload Demo Notes"** (or type your own notes in the Scratchpad on the right).
+   - Notice the green indicator showing `● Synced with backend`.
+4. **Wrap & Analyze the Meeting (View 3):**
+   - Click the purple **"🚀 Wrap & Analyze Meeting"** button.
+   - **Google Gemini** will immediately synthesize the spoken dialogue against your notes:
+     - 📌 **Executive Summary** is generated.
+     - 🤝 **Promises by Us** (User Deliverables) are extracted.
+     - 🎯 **Promises by Attendees** are identified.
+     - 🔍 **Scratchpad vs. Spoken Discrepancies** are flagged.
+   - Notice the green confirmation banner: memory is retained into **Vectorize Hindsight Cloud**.
+   - Your action items are automatically dispatched to your **n8n Google Sheets webhook** (`/webhook/meeting-sync-tasks`)!
+5. **1-Click Follow-Up Scheduling (Live n8n Automation):**
+   - At the bottom of the page, review the pre-filled follow-up date and agenda.
+   - Click the green **"📅 Confirm & Schedule Next Meeting"** button.
+   - The backend calls your live **n8n webhook** (`/webhook/create-meeting`).
+   - A success banner will appear displaying:
+     - ✅ **Google Calendar Event Link**
+     - 🎥 **Real Google Meet Video Link**
+     - ✉️ **Confirmation that an email was sent to the attendee via Gmail!**
+6. **Inspect Hindsight Contact Dossiers (View 4):**
+   - Click **"Hindsight Dossiers"** in the sidebar.
+   - View the cumulative relationship history and chronological commitment timeline.
+
+---
+
+### Option 2: Live Google Meet Call (With Companion Extension)
+
+1. **Load the Chrome Extension:**
+   - In Google Chrome, go to `chrome://extensions/`.
+   - Enable **Developer mode** (toggle in the top-right corner).
+   - Click **Load unpacked** (top-left) and select:
+     `C:\Users\tanis\OneDrive\Desktop\Meating AI\meeting-intelligence-agent\extension`
+2. **Start a Google Meet Call:**
+   - Go to [https://meet.google.com/new](https://meet.google.com/new) and join the call.
+   - **Turn on Closed Captions:** Click the **CC** button on the bottom bar or press `c` on your keyboard.
+   - Look for the floating badge in the bottom-left of Google Meet: `🟢 Captions Streaming to Agent`.
+3. **Open the Web Dashboard:**
+   - Click the extension icon in your toolbar and click **"Open Web Dashboard ↗"** (or visit [http://localhost:8000/dashboard](http://localhost:8000/dashboard)).
+   - Go to **Live Meeting Studio**: Your spoken words will stream into the left pane in real time!
+   - Type your notes in the right pane using quick-tag buttons (`+ Promise`, `+ Decision`, `+ Follow-up`).
+4. **End & Reconcile:**
+   - When the call concludes, click **"Wrap & Analyze Meeting"** in the dashboard to trigger Gemini analysis, Hindsight memory retention, and follow-up scheduling.
+
+---
+
+### Option 3: Automated Pytest Suite
+
+Run the complete 11-test automated suite covering all routes, services, memory operations, and reconciliation logic:
+```powershell
+cd "meeting-intelligence-agent\backend"
+venv\Scripts\pytest -v
+```
+All 11 tests pass:
+- `test_calendar_routes.py`: Calendar upcoming events & follow-up scheduling schema.
+- `test_hindsight.py`: Memory bank creation, disposition parameters, retain & recall cycles.
+- `test_llm_pipeline.py`: Gemini commitment extraction, discrepancy detection, and JSON parsing resilience.
+- `test_stream_and_dashboard.py`: Caption ingestion, scratchpad sync, dashboard serving, and contact dossiers.
+
+---
+
+## ⚙️ Environment Configuration (`.env`)
+
+In `meeting-intelligence-agent/backend/.env`:
+
+```env
+# 1. Vectorize Hindsight Memory Bank (https://vectorize.io)
+HINDSIGHT_API_URL=https://api.hindsight.vectorize.io
+HINDSIGHT_API_KEY=your_hindsight_api_key
+
+# 2. Google Gemini LLM Configuration (https://aistudio.google.com)
+GEMINI_API_KEY=your_gemini_api_key
+GEMINI_MODEL=gemini-2.5-flash
+
+# 3. n8n Automation Webhooks (Google Calendar, Gmail & Google Sheets)
+N8N_CREATE_MEETING_WEBHOOK_URL=https://vijaysiddhath.app.n8n.cloud/webhook/create-meeting
+N8N_SYNC_TASKS_WEBHOOK_URL=https://vijaysiddhath.app.n8n.cloud/webhook/meeting-sync-tasks
+
+# 4. Server Configuration
+HOST=0.0.0.0
+PORT=8000
+```
+
+---
+
+## 🌟 Key Features Breakdown
 
 ### 1. 🤖 Zero-Bot Client-Side Capture (Chrome Extension)
 - Works completely client-side by observing the official Google Meet Closed Captions DOM elements.
@@ -74,13 +177,12 @@ flowchart TD
 
 ### 3. 🔍 Post-Meeting Intelligence & Discrepancy Reconciliation
 - Powered by **Google Gemini (`gemini-2.5-flash`)**.
-- **Cross-Reconciliation:** Compares your scratchpad notes with spoken dialogue and flags contradictions in real time (e.g., *“Scratchpad noted Friday delivery, but spoken words agreed to Thursday 5 PM”*).
+- **Cross-Reconciliation:** Compares your scratchpad notes with spoken dialogue and flags contradictions in real time.
 - **Structured Deliverables:**
   - 🤝 **Promises Made by Us:** Deliverables the host committed to.
   - 🎯 **Promises Made by Them:** Commitments given by partners/clients.
   - ❓ **Unresolved Questions:** Pending questions needing follow-up.
   - 📌 **Executive Summary:** High-level meeting takeaways.
-- **Editable Follow-Up Agenda:** Edit or add extra notes before finalizing.
 
 ### 4. 🧠 Vectorize Hindsight Long-Term Memory
 - Integrates the official `hindsight-client` Python SDK.
@@ -93,114 +195,9 @@ flowchart TD
 - **Pre-Meeting Briefings:** Automatically recalls prior commitments before scheduled calls.
 - **Contact Dossiers:** Searchable relationship history and chronological commitment log for every client.
 
-### 5. ⚡ Automated Action via n8n (Calendar + Gmail)
-- Eliminates OAuth headaches by connecting directly to an **n8n automation workflow**.
-- Clicking **"Confirm & Schedule Next Meeting"** dispatches a structured payload to your n8n webhook.
-- n8n instantly:
-  1. Creates the follow-up meeting in **Google Calendar** with an auto-generated Google Meet link.
-  2. Sends an email via **Gmail** to all attendees containing the executive summary, user promises, and attendee deliverables.
-
----
-
-## 🚀 Quick Start Guide
-
-### Step 1: Clone & Configure Environment
-In `meeting-intelligence-agent/backend/.env`:
-```env
-# Google Gemini API Key (Get free from https://aistudio.google.com/app/apikey)
-GEMINI_API_KEY="your-gemini-api-key"
-GEMINI_MODEL="gemini-2.5-flash"
-
-# Vectorize Hindsight Configuration
-HINDSIGHT_API_KEY="your-hindsight-key"
-HINDSIGHT_API_URL="https://api.hindsight.vectorize.io"
-HINDSIGHT_BANK_ID="meeting_intelligence_bank"
-
-# Optional: n8n Webhook for Google Calendar & Gmail automation
-N8N_WEBHOOK_URL="https://your-n8n-instance.com/webhook/meeting-followup"
-
-# Server Settings
-HOST="0.0.0.0"
-PORT=8000
-```
-
-### Step 2: Start the Backend & Web Dashboard
-```powershell
-cd "meeting-intelligence-agent\backend"
-venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-```
-Open your browser at: **[http://localhost:8000/dashboard](http://localhost:8000/dashboard)**
-
-### Step 3: Load the Companion Chrome Extension
-1. Open Google Chrome and navigate to `chrome://extensions/`.
-2. Toggle on **Developer mode** (top-right switch).
-3. Click **Load unpacked** (top-left button).
-4. Select the directory:
-   `c:\Users\tanis\OneDrive\Desktop\Meating AI\meeting-intelligence-agent\extension`
-5. The extension icon will now appear in your toolbar!
-
----
-
-## 🔄 The 4-Step Meeting Cycle
-
-| Step | Interface | What Happens |
-| :--- | :--- | :--- |
-| **1. Pre-Meeting Briefing** | **Web Dashboard (View 1)** | View upcoming meetings. Click any call to fetch instant context and prior commitments from Hindsight. |
-| **2. Live Call & Notes** | **Google Meet + Dashboard (View 2)** | Turn on CC in Google Meet. Speech streams live to the dashboard while you take private notes in the scratchpad. |
-| **3. Wrap & Reconcile** | **Web Dashboard (View 3)** | Click *"Wrap & Analyze"*. Gemini identifies commitments and reconciles note discrepancies. Facts are saved to Hindsight. |
-| **4. 1-Click Follow-Up** | **n8n Automation** | Click *"Confirm & Schedule"*. n8n creates the Google Calendar event and emails meeting notes to all attendees via Gmail. |
-
----
-
-## ⚙️ n8n Workflow Configuration (Calendar + Gmail)
-
-Your n8n workflow only requires **3 simple nodes**:
-
-```
-[ Webhook Node (POST) ]
-         │
-         ├──► [ Google Calendar Node: "Create Event" ]
-         │
-         └──► [ Gmail Node: "Send Email" ]
-```
-
-### Webhook Payload Example:
-```json
-{
-  "event_id": "evt-12345",
-  "summary": "Follow-up: Enterprise Architecture & Pricing",
-  "start_time": "2026-10-02T15:00:00Z",
-  "end_time": "2026-10-02T15:30:00Z",
-  "attendee_emails": ["sarah.connor@acme.org"],
-  "agenda": "Review questionnaire results and finalize pricing.",
-  "meet_link": "https://meet.google.com/abc-defg-hij"
-}
-```
-
----
-
-## 🧪 Automated Tests (11/11 Passing)
-
-Run the test suite to verify full integration:
-```powershell
-cd "meeting-intelligence-agent\backend"
-venv\Scripts\pytest -v
-```
-
-```
-tests/test_calendar_routes.py::test_calendar_upcoming_events PASSED       [  9%]
-tests/test_calendar_routes.py::test_calendar_schedule_followup_schema PASSED [ 18%]
-tests/test_calendar_routes.py::test_end_to_end_meeting_flow PASSED        [ 27%]
-tests/test_hindsight.py::test_bank_creation_and_disposition PASSED        [ 36%]
-tests/test_hindsight.py::test_hindsight_retention_and_recall_cycle PASSED  [ 45%]
-tests/test_hindsight.py::test_recall_for_unknown_attendee PASSED          [ 54%]
-tests/test_llm_pipeline.py::test_llm_pipeline_extraction_and_reconciliation PASSED [ 63%]
-tests/test_llm_pipeline.py::test_json_parsing_resilience PASSED           [ 72%]
-tests/test_stream_and_dashboard.py::test_serve_dashboard_page PASSED      [ 81%]
-tests/test_stream_and_dashboard.py::test_stream_caption_and_notes_ingestion PASSED [ 90%]
-tests/test_stream_and_dashboard.py::test_todays_calendar_and_contact_dossier PASSED [100%]
-======================= 11 passed in 27.97s =======================
-```
+### 5. ⚡ Automated Action via n8n (Calendar + Gmail + Google Sheets)
+- **Book a Meeting (`/webhook/create-meeting`):** Creates the Google Calendar event, generates a real Google Meet link, and sends an invite confirmation to attendees via Gmail.
+- **Sync Tasks (`/webhook/meeting-sync-tasks`):** Appends each extracted action item as a row in the "Action Items" tab of your Google Sheet with task title, owner, and due date.
 
 ---
 
@@ -210,5 +207,5 @@ tests/test_stream_and_dashboard.py::test_todays_calendar_and_contact_dossier PAS
 - [x] **Zero Third-Party Meeting Bots:** Uses DOM closed caption streaming from Chrome Extension.
 - [x] **Google Gemini Inference:** High-speed, structured extraction and discrepancy reconciliation.
 - [x] **Dual Note-Taking & Reconciliation:** Real-time scratchpad auto-sync + post-call synthesis.
-- [x] **Automated Calendar & Gmail Action:** n8n webhook integration for zero-friction follow-ups.
+- [x] **Automated Calendar, Gmail & Sheets Action:** n8n webhook integration for zero-friction follow-ups.
 - [x] **Repository Security:** `.gitignore` configured to keep API keys and virtual environments safe.
