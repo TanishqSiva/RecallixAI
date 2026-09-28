@@ -1,41 +1,59 @@
 /**
  * Meeting Intelligence Agent - Central Web Application Dashboard
  * Coordinates:
- * 1. Today's Schedule & Pre-Call Hindsight Briefings
+ * 1. Clients Directory & Extension Transcripts History
  * 2. Live Meeting Studio & Scratchpad (Ingesting from Companion Extension)
  * 3. Post-Meeting Intelligence & Calendar Follow-up Center
- * 4. Contact Dossiers & Historical Memories in Hindsight Cloud
  */
 
 const API_BASE = ""; // Same origin (FastAPI host)
 let activeMeetingId = "live-meeting";
 let activeAttendeeEmail = "";
+let selectedClientObj = null;
 let streamPollingTimer = null;
 let currentSessionData = null;
+let clientsListCache = [];
 
-// DOM Elements
+// DOM Elements - Views
 const views = {
-  schedule: document.getElementById("view-schedule"),
+  clients: document.getElementById("view-clients"),
   studio: document.getElementById("view-studio"),
-  intelligence: document.getElementById("view-intelligence"),
-  contacts: document.getElementById("view-contacts")
+  intelligence: document.getElementById("view-intelligence")
 };
 
 const navItems = document.querySelectorAll(".nav-item");
 const currentViewTitle = document.getElementById("currentViewTitle");
 const currentViewSubtitle = document.getElementById("currentViewSubtitle");
 
-// View 1 Elements
-const todayMeetingsList = document.getElementById("todayMeetingsList");
-const briefingContactName = document.getElementById("briefingContactName");
-const briefingLoading = document.getElementById("briefingLoading");
-const briefingContent = document.getElementById("briefingContent");
-const btnRefreshCalendar = document.getElementById("btnRefreshCalendar");
-const btnLaunchCallWithBrief = document.getElementById("btnLaunchCallWithBrief");
+// View 1 Elements (Clients)
+const clientsContainer = document.getElementById("clientsContainer");
+const clientSearchInput = document.getElementById("clientSearchInput");
+const clientAvatar = document.getElementById("clientAvatar");
+const clientName = document.getElementById("clientName");
+const clientEmail = document.getElementById("clientEmail");
+const clientCompany = document.getElementById("clientCompany");
+const clientMeetingCountPill = document.getElementById("clientMeetingCountPill");
+const btnStartMeetingWithClient = document.getElementById("btnStartMeetingWithClient");
+const btnClientTargetName = document.getElementById("btnClientTargetName");
+const clientMeetingsList = document.getElementById("clientMeetingsList");
+const btnOpenAddClientModal = document.getElementById("btnOpenAddClientModal");
+const btnOpenAddClientModalTop = document.getElementById("btnOpenAddClientModalTop");
 
-// View 2 Elements
+// Add Client Modal Elements
+const addClientModal = document.getElementById("addClientModal");
+const btnCloseAddClientModal = document.getElementById("btnCloseAddClientModal");
+const btnCancelAddClient = document.getElementById("btnCancelAddClient");
+const btnSaveClient = document.getElementById("btnSaveClient");
+const modalClientName = document.getElementById("modalClientName");
+const modalClientEmail = document.getElementById("modalClientEmail");
+const modalClientCompany = document.getElementById("modalClientCompany");
+const modalClientPhone = document.getElementById("modalClientPhone");
+const modalClientNotes = document.getElementById("modalClientNotes");
+
+// View 2 Elements (Studio)
 const studioMeetingTitle = document.getElementById("studioMeetingTitle");
 const studioMeetingId = document.getElementById("studioMeetingId");
+const studioClientSelector = document.getElementById("studioClientSelector");
 const dialogueFeed = document.getElementById("dialogueFeed");
 const captionCount = document.getElementById("captionCount");
 const studioScratchpad = document.getElementById("studioScratchpad");
@@ -45,7 +63,7 @@ const btnSimulateDialogue = document.getElementById("btnSimulateDialogue");
 const btnClearDialogue = document.getElementById("btnClearDialogue");
 const btnClearNotes = document.getElementById("btnClearNotes");
 
-// View 3 Elements
+// View 3 Elements (Intelligence)
 const intelLoadingState = document.getElementById("intelLoadingState");
 const intelMainContent = document.getElementById("intelMainContent");
 const hindsightMemoryDetails = document.getElementById("hindsightMemoryDetails");
@@ -64,16 +82,6 @@ const followupAgenda = document.getElementById("followupAgenda");
 const btnConfirmSchedule = document.getElementById("btnConfirmSchedule");
 const calendarSuccessBox = document.getElementById("calendarSuccessBox");
 
-// View 4 Elements
-const contactsContainer = document.getElementById("contactsContainer");
-const contactSearchInput = document.getElementById("contactSearchInput");
-const dossierAvatar = document.getElementById("dossierAvatar");
-const dossierContactName = document.getElementById("dossierContactName");
-const dossierContactEmail = document.getElementById("dossierContactEmail");
-const dossierMemoryCount = document.getElementById("dossierMemoryCount");
-const dossierBriefing = document.getElementById("dossierBriefing");
-const dossierTimeline = document.getElementById("dossierTimeline");
-
 // Initialize on DOM Load
 document.addEventListener("DOMContentLoaded", async () => {
   setupNavigation();
@@ -81,10 +89,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupEventListeners();
   setDefaultFollowupDate();
 
-  // Load initial data
-  await loadTodaySchedule();
+  // Load initial clients list
+  await loadClientsList();
   await syncActiveMeetingStream();
-  await loadContactsList();
 
   // Start polling active stream
   startStreamPolling();
@@ -98,13 +105,13 @@ function setupNavigation() {
       switchView(viewKey);
     });
   });
-
-  document.getElementById("btnLaunchStudioDirect").addEventListener("click", () => switchView("studio"));
 }
 
 function switchView(viewName) {
   navItems.forEach(b => b.classList.remove("active"));
-  Object.values(views).forEach(v => v.classList.remove("active"));
+  Object.values(views).forEach(v => {
+    if (v) v.classList.remove("active");
+  });
 
   const targetNav = document.querySelector(`.nav-item[data-view="view-${viewName}"]`);
   const targetView = views[viewName];
@@ -113,10 +120,9 @@ function switchView(viewName) {
   if (targetView) targetView.classList.add("active");
 
   const titles = {
-    schedule: { title: "📅 1. Today's Meetings & Past Memory", sub: "Check your upcoming calls and see what AI remembers about the attendees" },
-    studio: { title: "🎙️ 2. Live Meeting Studio & Scratchpad", sub: "Watch speech stream live from Google Meet and jot down private notes" },
-    intelligence: { title: "⚡ 3. Post-Meeting AI Summary & Follow-up", sub: "Gemini commitments, Google Sheets action items & 1-click Google Calendar booking" },
-    contacts: { title: "👥 4. People & Relationship Memories", sub: "Everything Vectorize Hindsight remembers across all your calls" }
+    clients: { title: "👥 Clients & Past Meeting Transcripts", sub: "Manage clients, view past meetings, and read full extension transcripts" },
+    studio: { title: "🎙️ Live Meeting Studio & Scratchpad", sub: "Real-time Google Meet captions ingested from Chrome Companion Extension" },
+    intelligence: { title: "⚡ Post-Call Intelligence & Follow-up Center", sub: "Gemini analysis, Google Sheets action items & 1-click Google Calendar booking" }
   };
 
   if (titles[viewName]) {
@@ -126,97 +132,190 @@ function switchView(viewName) {
 }
 
 // -------------------------------------------------------------
-// VIEW 1: Schedule & Pre-Meeting Briefings
+// VIEW 1: Client Management & Extension Transcripts
 // -------------------------------------------------------------
-async function loadTodaySchedule() {
+async function loadClientsList() {
   try {
-    const res = await fetch(`${API_BASE}/api/calendar/today`);
+    const res = await fetch(`${API_BASE}/api/clients`);
     const data = await res.json();
-    todayMeetingsList.innerHTML = "";
+    clientsListCache = data.clients || [];
 
-    if (data.events && data.events.length > 0) {
-      data.events.forEach((evt, idx) => {
-        const item = document.createElement("div");
-        item.className = `schedule-item ${idx === 0 ? "selected" : ""}`;
-        
-        const startTime = new Date(evt.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const endTime = new Date(evt.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const extAttendee = (evt.attendees || []).find(a => (a.email || a) !== "alex@example.com");
-        const attendeeEmail = extAttendee ? (extAttendee.email || extAttendee) : "colleague@example.com";
-        const attendeeName = extAttendee ? (extAttendee.displayName || attendeeEmail) : "Colleague";
+    renderClientsContainer(clientsListCache);
+    populateStudioClientSelector(clientsListCache);
 
-        item.innerHTML = `
-          <div class="item-top">
-            <span class="item-title">${escapeHtml(evt.summary || "Project Discussion")}</span>
-            <span class="item-time">⏰ ${startTime} - ${endTime}</span>
-          </div>
-          <div class="item-desc">${escapeHtml(evt.description || "Review deliverables and project requirements.")}</div>
-          <div class="item-footer">
-            <span>👤 ${escapeHtml(attendeeName)}</span>
-            <span style="color: #6366f1;">${evt.hangoutLink ? "Google Meet ↗" : "Virtual"}</span>
-          </div>
-        `;
-
-        item.addEventListener("click", () => {
-          document.querySelectorAll(".schedule-item").forEach(el => el.classList.remove("selected"));
-          item.classList.add("selected");
-          activeAttendeeEmail = attendeeEmail;
-          activeMeetingId = evt.hangoutLink ? evt.hangoutLink.split("/").pop() : `meet-${idx + 1}`;
-          loadInitialBriefing(attendeeEmail);
-        });
-
-        todayMeetingsList.appendChild(item);
-      });
-      // Load briefing for first scheduled meeting if any
-      const firstExt = (data.events[0].attendees || []).find(a => (a.email || a) !== "alex@example.com");
-      const firstEmail = firstExt ? (firstExt.email || firstExt) : "";
-      if (firstEmail) {
-        activeAttendeeEmail = firstEmail;
-        loadInitialBriefing(firstEmail);
-      }
-    } else {
-      todayMeetingsList.innerHTML = `<div style="color: var(--text-muted); text-align: center; padding: 25px;">No scheduled calls for today.</div>`;
-      briefingContactName.textContent = "Select a meeting from the schedule";
-      briefingContent.textContent = "Select an upcoming meeting on the left to recall previous agreements, unresolved topics, and background dossiers from Hindsight.";
+    if (clientsListCache.length > 0 && !selectedClientObj) {
+      selectClient(clientsListCache[0]);
     }
   } catch (err) {
-    console.error("Error loading today's schedule:", err);
+    console.error("Error loading clients:", err);
   }
 }
 
-async function loadInitialBriefing(attendeeEmail) {
-  if (!attendeeEmail) return;
-  briefingContactName.textContent = `Target: ${attendeeEmail}`;
-  briefingLoading.style.display = "flex";
-  briefingContent.textContent = "";
+function renderClientsContainer(clients) {
+  clientsContainer.innerHTML = "";
+
+  if (clients.length === 0) {
+    clientsContainer.innerHTML = `
+      <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 12px;">
+        No clients added yet.<br>Click <strong>"+ Add Client"</strong> to create one!
+      </div>
+    `;
+    return;
+  }
+
+  clients.forEach(c => {
+    const card = document.createElement("div");
+    const isSelected = selectedClientObj && selectedClientObj.email.toLowerCase() === c.email.toLowerCase();
+    card.className = `client-card ${isSelected ? "selected" : ""}`;
+    card.innerHTML = `
+      <div class="client-card-name">${escapeHtml(c.name)}</div>
+      <div class="client-card-email">${escapeHtml(c.email)}</div>
+      ${c.company ? `<div class="client-card-company">🏢 ${escapeHtml(c.company)}</div>` : ""}
+    `;
+    card.addEventListener("click", () => selectClient(c));
+    clientsContainer.appendChild(card);
+  });
+}
+
+function populateStudioClientSelector(clients) {
+  studioClientSelector.innerHTML = `<option value="">-- Select Client --</option>`;
+  clients.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c.email;
+    opt.textContent = `${c.name} (${c.email})`;
+    if (activeAttendeeEmail && activeAttendeeEmail.toLowerCase() === c.email.toLowerCase()) {
+      opt.selected = true;
+    }
+    studioClientSelector.appendChild(opt);
+  });
+}
+
+function selectClient(client) {
+  selectedClientObj = client;
+  activeAttendeeEmail = client.email;
+
+  // Highlight card
+  renderClientsContainer(clientsListCache);
+
+  // Profile Card Header
+  const initials = client.name ? client.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) : "CL";
+  clientAvatar.textContent = initials;
+  clientName.textContent = client.name;
+  clientEmail.textContent = client.email;
+  clientCompany.textContent = client.company ? `🏢 ${client.company}` : "Personal Contact";
+  clientMeetingCountPill.textContent = `${client.meeting_count || 0} Past Meeting${(client.meeting_count === 1) ? '' : 's'}`;
+  btnClientTargetName.textContent = client.name.split(" ")[0];
+
+  // Update studio selector
+  if (studioClientSelector) {
+    studioClientSelector.value = client.email;
+  }
+
+  // Load Past Meetings & Extension Transcripts
+  loadClientMeetings(client.email);
+}
+
+async function loadClientMeetings(email) {
+  clientMeetingsList.innerHTML = `<div class="loader-state"><div class="spinner"></div><p>Loading past meetings & transcripts...</p></div>`;
 
   try {
-    const res = await fetch(`${API_BASE}/api/meetings/prep`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user_id: "alex@example.com",
-        attendee_email: attendeeEmail
-      })
-    });
+    const res = await fetch(`${API_BASE}/api/clients/${encodeURIComponent(email)}/meetings`);
     const data = await res.json();
-    briefingLoading.style.display = "none";
-    briefingContent.textContent = data.briefing || "No prior history found in Hindsight bank.";
+    const meetings = data.meetings || [];
+
+    clientMeetingsList.innerHTML = "";
+
+    if (meetings.length === 0) {
+      clientMeetingsList.innerHTML = `
+        <div class="empty-history-hint" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+          <div style="font-size: 32px; margin-bottom: 8px;">📜</div>
+          <strong>No past meetings recorded for ${escapeHtml(selectedClientObj.name)} yet.</strong>
+          <p style="font-size: 12px; margin-top: 6px;">
+            Click <strong>"Start Meeting with ${escapeHtml(selectedClientObj.name.split(" ")[0])}"</strong> above to record your first meeting with the Chrome Extension!
+          </p>
+        </div>
+      `;
+      return;
+    }
+
+    meetings.forEach((m, idx) => {
+      const card = document.createElement("div");
+      card.className = "meeting-record-card";
+
+      const dateStr = m.timestamp ? new Date(m.timestamp).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : "Past Meeting";
+      const captions = m.captions || [];
+
+      let transcriptHtml = "";
+      if (captions.length > 0) {
+        transcriptHtml = captions.map(c => `
+          <div class="transcript-line">
+            <span class="transcript-speaker">${escapeHtml(c.speaker || "Speaker")}:</span>
+            <span class="transcript-text">${escapeHtml(c.text)}</span>
+          </div>
+        `).join("");
+      } else {
+        transcriptHtml = `<div style="font-size: 11px; color: var(--text-muted);">No raw caption chunks saved for this meeting.</div>`;
+      }
+
+      card.innerHTML = `
+        <div class="meeting-card-header">
+          <div class="meeting-title">📌 ${escapeHtml(m.title || "Meeting")}</div>
+          <div class="meeting-date">📅 ${dateStr}</div>
+        </div>
+        ${m.summary ? `<div class="meeting-summary-block"><strong>Summary:</strong> ${escapeHtml(m.summary)}</div>` : ""}
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; font-size: 12px;">
+          <div>
+            <strong style="color: #818cf8;">🙋 Promises by Us:</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; color: #cbd5e1;">
+              ${(m.promises_by_us && m.promises_by_us.length > 0) ? m.promises_by_us.map(p => `<li>${escapeHtml(p)}</li>`).join("") : `<li style="color: var(--text-muted);">None</li>`}
+            </ul>
+          </div>
+          <div>
+            <strong style="color: #34d399;">👥 Promises by Client:</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; color: #cbd5e1;">
+              ${(m.promises_by_them && m.promises_by_them.length > 0) ? m.promises_by_them.map(p => `<li>${escapeHtml(p)}</li>`).join("") : `<li style="color: var(--text-muted);">None</li>`}
+            </ul>
+          </div>
+        </div>
+
+        <button class="transcript-toggle-btn" id="btnToggleTranscript_${idx}">
+          💬 View Full Extension Transcript (${captions.length} lines) ▾
+        </button>
+        <div class="transcript-box" id="transcriptBox_${idx}">
+          ${transcriptHtml}
+        </div>
+      `;
+
+      clientMeetingsList.appendChild(card);
+
+      // Toggle handler
+      const toggleBtn = card.querySelector(`#btnToggleTranscript_${idx}`);
+      const transcriptBox = card.querySelector(`#transcriptBox_${idx}`);
+      toggleBtn.addEventListener("click", () => {
+        const isHidden = transcriptBox.style.display === "none" || !transcriptBox.style.display;
+        transcriptBox.style.display = isHidden ? "block" : "none";
+        toggleBtn.textContent = isHidden 
+          ? `💬 Hide Extension Transcript ▴` 
+          : `💬 View Full Extension Transcript (${captions.length} lines) ▾`;
+      });
+    });
   } catch (err) {
-    briefingLoading.style.display = "none";
-    briefingContent.textContent = "Error recalling briefing from Hindsight: " + err.message;
+    clientMeetingsList.innerHTML = `<div style="color: var(--danger); padding: 20px;">Error loading meetings: ${err.message}</div>`;
   }
 }
 
 // -------------------------------------------------------------
-// VIEW 2: Live Meeting Studio & Scratchpad
+// VIEW 2: Live Meeting Studio Stream
 // -------------------------------------------------------------
 async function syncActiveMeetingStream() {
   try {
-    const res = await fetch(`${API_BASE}/api/stream/session/${activeMeetingId}`);
+    const res = await fetch(`${API_BASE}/api/stream/active`);
+    if (!res.ok) return;
     const session = await res.json();
-    currentSessionData = session;
+    if (!session) return;
 
+    activeMeetingId = session.meeting_id || "live-meeting";
     studioMeetingTitle.textContent = session.title || "Live Meeting Studio";
     studioMeetingId.textContent = session.meeting_id || "Active Session";
     studioScratchpad.value = session.user_notes || "";
@@ -270,7 +369,6 @@ function startStreamPolling() {
       const res = await fetch(`${API_BASE}/api/stream/session/${activeMeetingId}`);
       if (res.ok) {
         const session = await res.json();
-        // Update captions if count changed
         if (!currentSessionData || (session.captions && session.captions.length !== currentSessionData.captions.length)) {
           renderDialogueCaptions(session.captions || []);
           currentSessionData = session;
@@ -337,8 +435,8 @@ async function wrapCallAndAnalyze() {
     intelMainContent.style.display = "block";
     renderIntelligenceResults(data);
 
-    // Refresh contact dossiers to reflect retained memory
-    await loadContactsList();
+    // Reload clients list so meeting count and history update instantly!
+    await loadClientsList();
   } catch (err) {
     intelLoadingState.style.display = "none";
     alert("Error during meeting synthesis: " + err.message);
@@ -349,19 +447,14 @@ function renderIntelligenceResults(data) {
   const analysis = data.analysis || {};
   const hindsightInfo = data.hindsight_retention || {};
 
-  // Memory Badge & n8n Sync Indicator
   hindsightMemoryDetails.innerHTML = `Bank: ${hindsightInfo.bank_id || "bank_alex_example_com"} | Document: ${hindsightInfo.document_id || "meet_123"}<br><span style="color: #4ade80; font-size: 0.8rem;">📊 Action items automatically synced to Google Sheets via n8n</span>`;
-
-  // Summary
   intelSummary.textContent = analysis.summary || "Meeting completed successfully.";
 
-  // Lists
   renderList(intelPromisesUs, analysis.promises_by_us, "No promises recorded for user.");
-  renderList(intelPromisesThem, analysis.promises_by_them, "No promises recorded for attendee.");
+  renderList(intelPromisesThem, analysis.promises_by_them, "No promises recorded for client.");
   renderList(intelOpenFollowups, analysis.missed_or_pending_followups, "No open items detected.");
   renderList(intelDiscrepancies, analysis.note_discrepancies, "Scratchpad notes match spoken dialogue.");
 
-  // Follow-up card setup
   followupAttendeeName.textContent = activeAttendeeEmail;
   followupAttendees.value = activeAttendeeEmail;
   if (analysis.suggested_followup_date) {
@@ -376,7 +469,6 @@ function renderIntelligenceResults(data) {
     followupSuggestedDate.textContent = "Suggested: 3 Days Out";
   }
 
-  // Pre-fill agenda
   const agendaItems = [];
   if (analysis.promises_by_us && analysis.promises_by_us.length > 0) {
     agendaItems.push("User Deliverables: " + analysis.promises_by_us.join("; "));
@@ -424,7 +516,7 @@ async function scheduleFollowUpEvent() {
     });
     const result = await res.json();
     btnConfirmSchedule.disabled = false;
-    btnConfirmSchedule.textContent = "📅 Confirm & Schedule Next Meeting via Google Calendar";
+    btnConfirmSchedule.textContent = "📅 Confirm & Book Follow-Up Meeting (via Google Calendar & n8n)";
 
     calendarSuccessBox.style.display = "block";
     const meetLink = result.meet_link || (result.event && result.event.hangoutLink) || "";
@@ -438,85 +530,8 @@ async function scheduleFollowUpEvent() {
     `;
   } catch (err) {
     btnConfirmSchedule.disabled = false;
-    btnConfirmSchedule.textContent = "📅 Confirm & Schedule Next Meeting via Google Calendar";
+    btnConfirmSchedule.textContent = "📅 Confirm & Book Follow-Up Meeting (via Google Calendar & n8n)";
     alert("Error scheduling event: " + err.message);
-  }
-}
-
-// -------------------------------------------------------------
-// VIEW 4: Contact History / Hindsight Dossier
-// -------------------------------------------------------------
-async function loadContactsList() {
-  try {
-    const res = await fetch(`${API_BASE}/api/contacts?user_id=alex@example.com`);
-    const data = await res.json();
-    contactsContainer.innerHTML = "";
-
-    if (data.contacts && data.contacts.length > 0) {
-      data.contacts.forEach((contact, idx) => {
-        const card = document.createElement("div");
-        card.className = `contact-card ${idx === 0 ? "selected" : ""}`;
-        card.innerHTML = `
-          <div class="contact-name">${escapeHtml(contact.name)}</div>
-          <div class="contact-email">${escapeHtml(contact.email)}</div>
-          <div class="contact-meta">🧠 ${contact.memory_count} memory records</div>
-        `;
-        card.addEventListener("click", () => {
-          document.querySelectorAll(".contact-card").forEach(c => c.classList.remove("selected"));
-          card.classList.add("selected");
-          loadContactDossier(contact.email, contact.name);
-        });
-        contactsContainer.appendChild(card);
-      });
-
-      // Load first contact dossier by default
-      loadContactDossier(data.contacts[0].email, data.contacts[0].name);
-    } else {
-      contactsContainer.innerHTML = `<div style="color: var(--text-muted); text-align: center; padding: 25px;">No contacts tracked yet.<br>Contacts will appear here once meetings are completed and retained in Hindsight.</div>`;
-      dossierAvatar.textContent = "--";
-      dossierContactName.textContent = "Select a Contact";
-      dossierContactEmail.textContent = "Choose a contact to view memory context";
-      dossierMemoryCount.textContent = "0 Records";
-      dossierBriefing.textContent = "Select a contact from the list on the left to recall historical commitments and memory context from Hindsight.";
-      dossierTimeline.innerHTML = "";
-    }
-  } catch (err) {
-    console.error("Error loading contacts:", err);
-  }
-}
-
-async function loadContactDossier(email, name) {
-  dossierAvatar.textContent = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "--";
-  dossierContactName.textContent = name || email;
-  dossierContactEmail.textContent = email;
-  dossierBriefing.textContent = "Querying Vectorize Hindsight memory bank...";
-  dossierTimeline.innerHTML = "";
-
-  try {
-    const res = await fetch(`${API_BASE}/api/contacts/${encodeURIComponent(email)}/dossier?user_id=alex@example.com`);
-    const dossier = await res.json();
-
-    dossierMemoryCount.textContent = `${dossier.memory_count || 0} Memory Records`;
-    dossierBriefing.textContent = dossier.briefing || "No historical memories found.";
-
-    if (dossier.timeline && dossier.timeline.length > 0) {
-      dossier.timeline.forEach(event => {
-        const ev = document.createElement("div");
-        ev.className = "timeline-event";
-        const dateStr = event.timestamp ? new Date(event.timestamp).toLocaleDateString() + " " + new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "";
-        ev.innerHTML = `
-          <div class="timeline-event-header">
-            <strong>${escapeHtml(event.context || "Meeting")}</strong> • ${dateStr}
-          </div>
-          <div class="timeline-event-body">${escapeHtml(event.content || "")}</div>
-        `;
-        dossierTimeline.appendChild(ev);
-      });
-    } else {
-      dossierTimeline.innerHTML = `<div style="color: var(--text-muted); padding: 10px;">No timeline items recorded yet.</div>`;
-    }
-  } catch (err) {
-    dossierBriefing.textContent = "Error loading dossier: " + err.message;
   }
 }
 
@@ -524,29 +539,58 @@ async function loadContactDossier(email, name) {
 // Interactive Helpers & Event Listeners
 // -------------------------------------------------------------
 function setupEventListeners() {
-  btnRefreshCalendar.addEventListener("click", loadTodaySchedule);
-  btnLaunchCallWithBrief.addEventListener("click", () => {
-    switchView("studio");
-  });
+  // Add Client Modal Events
+  if (btnOpenAddClientModal) btnOpenAddClientModal.addEventListener("click", openAddClientModal);
+  if (btnOpenAddClientModalTop) btnOpenAddClientModalTop.addEventListener("click", openAddClientModal);
+  if (btnCloseAddClientModal) btnCloseAddClientModal.addEventListener("click", closeAddClientModal);
+  if (btnCancelAddClient) btnCancelAddClient.addEventListener("click", closeAddClientModal);
+  if (btnSaveClient) btnSaveClient.addEventListener("click", saveNewClient);
+
+  // Search Filter
+  if (clientSearchInput) {
+    clientSearchInput.addEventListener("input", (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      const filtered = clientsListCache.filter(c => 
+        c.name.toLowerCase().includes(q) || 
+        c.email.toLowerCase().includes(q) || 
+        (c.company && c.company.toLowerCase().includes(q))
+      );
+      renderClientsContainer(filtered);
+    });
+  }
+
+  // Start Meeting with Client
+  if (btnStartMeetingWithClient) {
+    btnStartMeetingWithClient.addEventListener("click", () => {
+      switchView("studio");
+      if (selectedClientObj) {
+        studioMeetingTitle.textContent = `Live Meeting: ${selectedClientObj.name}`;
+      }
+    });
+  }
+
+  // Studio Selector change
+  if (studioClientSelector) {
+    studioClientSelector.addEventListener("change", (e) => {
+      activeAttendeeEmail = e.target.value;
+      const found = clientsListCache.find(c => c.email.toLowerCase() === activeAttendeeEmail.toLowerCase());
+      if (found) {
+        selectedClientObj = found;
+        studioMeetingTitle.textContent = `Live Meeting: ${found.name}`;
+      }
+    });
+  }
 
   btnStudioWrapMeeting.addEventListener("click", wrapCallAndAnalyze);
   btnConfirmSchedule.addEventListener("click", scheduleFollowUpEvent);
+
   document.getElementById("btnGlobalRefresh").addEventListener("click", async () => {
-    await loadTodaySchedule();
+    await loadClientsList();
     await syncActiveMeetingStream();
-    await loadContactsList();
   });
 
-  // Kid-Friendly Step & Demo Buttons
-  const btnLaunchDemo = document.getElementById("btnLaunchDemo");
   const btnLaunchDemoTop = document.getElementById("btnLaunchDemoTop");
-  const btnGoToStudio = document.getElementById("btnGoToStudio");
-  const btnGoToIntel = document.getElementById("btnGoToIntel");
-
-  if (btnLaunchDemo) btnLaunchDemo.addEventListener("click", launchInteractiveDemo);
   if (btnLaunchDemoTop) btnLaunchDemoTop.addEventListener("click", launchInteractiveDemo);
-  if (btnGoToStudio) btnGoToStudio.addEventListener("click", () => switchView("studio"));
-  if (btnGoToIntel) btnGoToIntel.addEventListener("click", () => switchView("intelligence"));
 
   // Scratchpad Quick Tags
   document.querySelectorAll(".btn-tag").forEach(btn => {
@@ -565,10 +609,11 @@ function setupEventListeners() {
 
   // Studio Simulation line
   btnSimulateDialogue.addEventListener("click", async () => {
+    const targetName = selectedClientObj ? selectedClientObj.name : "Client";
     const quotes = [
-      { speaker: "Colleague", text: "We need the SSO SAML configuration confirmed before our security audit." },
+      { speaker: targetName, text: "We need the SSO SAML configuration confirmed before our security audit." },
       { speaker: "Alex Miller (You)", text: "I can guarantee the documentation will be sent by Thursday morning." },
-      { speaker: "Colleague", text: "Excellent. Let's make sure we review the SLA tier next week." },
+      { speaker: targetName, text: "Excellent. Let's make sure we review the SLA tier next week." },
       { speaker: "Alex Miller (You)", text: "Agreed. I will put a 30-minute calendar invite on both our schedules." }
     ];
     const pick = quotes[Math.floor(Math.random() * quotes.length)];
@@ -596,19 +641,76 @@ function setupEventListeners() {
   }
 }
 
+// Modal Handlers
+function openAddClientModal() {
+  addClientModal.style.display = "flex";
+  modalClientName.value = "";
+  modalClientEmail.value = "";
+  modalClientCompany.value = "";
+  modalClientPhone.value = "";
+  modalClientNotes.value = "";
+  modalClientName.focus();
+}
+
+function closeAddClientModal() {
+  addClientModal.style.display = "none";
+}
+
+async function saveNewClient() {
+  const name = modalClientName.value.trim();
+  const email = modalClientEmail.value.trim();
+  const company = modalClientCompany.value.trim();
+  const phone = modalClientPhone.value.trim();
+  const notes = modalClientNotes.value.trim();
+
+  if (!name || !email) {
+    alert("Please provide both Client Name and Email Address.");
+    return;
+  }
+
+  btnSaveClient.disabled = true;
+  btnSaveClient.textContent = "Saving...";
+
+  try {
+    const res = await fetch(`${API_BASE}/api/clients`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, company, phone, notes })
+    });
+
+    const data = await res.json();
+    btnSaveClient.disabled = false;
+    btnSaveClient.textContent = "Save Client";
+    closeAddClientModal();
+
+    await loadClientsList();
+    if (data.client) {
+      selectClient(data.client);
+    }
+  } catch (err) {
+    btnSaveClient.disabled = false;
+    btnSaveClient.textContent = "Save Client";
+    alert("Error saving client: " + err.message);
+  }
+}
+
 async function launchInteractiveDemo() {
+  // Create or select sample client Vijay Siddhath
+  const demoClient = await createDemoClientIfNeeded();
+
   switchView("studio");
-  studioMeetingTitle.textContent = "Live Meeting: Mobile App Launch Sync";
-  activeAttendeeEmail = "colleague@example.com";
+  studioMeetingTitle.textContent = `Live Meeting: ${demoClient.name}`;
+  activeAttendeeEmail = demoClient.email;
+  if (studioClientSelector) studioClientSelector.value = demoClient.email;
   
   // Clear dialogue
   dialogueFeed.innerHTML = "";
   captionCount.textContent = "0 utterances";
 
   const demoLines = [
-    { speaker: "Colleague", text: "Hey Alex! Thanks for jumping on. We need to finalize the mobile app launch date and sync on deliverables." },
+    { speaker: demoClient.name, text: "Hey Alex! Thanks for jumping on. We need to finalize the mobile app launch date and sync on deliverables." },
     { speaker: "Alex Miller (You)", text: "I can commit to finishing the backend API documentation and sending it over by Thursday afternoon." },
-    { speaker: "Colleague", text: "Awesome. I will finalize the Figma UI mockups and invite beta testers by Friday." },
+    { speaker: demoClient.name, text: "Awesome. I will finalize the Figma UI mockups and invite beta testers by Friday." },
     { speaker: "Alex Miller (You)", text: "Perfect! Let's schedule our follow-up sync for next Tuesday at 2 PM to review beta feedback." }
   ];
 
@@ -628,7 +730,7 @@ async function launchInteractiveDemo() {
   }
 
   // Pre-fill notes
-  studioScratchpad.value = `[Promise: Deliver backend API documentation by Thursday afternoon]\n[Action: Colleague finalizing Figma UI mockups by Friday]\n[Decision: Next sync scheduled for Tuesday 2 PM]`;
+  studioScratchpad.value = `[Promise: Deliver backend API documentation by Thursday afternoon]\n[Action: ${demoClient.name} finalizing Figma UI mockups by Friday]\n[Decision: Next sync scheduled for Tuesday 2 PM]`;
   studioScratchpad.dispatchEvent(new Event("input"));
 
   await new Promise(r => setTimeout(r, 600));
@@ -636,13 +738,30 @@ async function launchInteractiveDemo() {
   // Automatically wrap meeting and synthesize
   await wrapCallAndAnalyze();
 
-  // Scroll smoothly down to follow-up form
-  setTimeout(() => {
-    const followupCard = document.querySelector(".followup-card");
-    if (followupCard) {
-      followupCard.scrollIntoView({ behavior: "smooth" });
-    }
-  }, 1000);
+  // Switch to clients view so user sees the meeting and transcript under Vijay Siddhath!
+  switchView("clients");
+  selectClient(demoClient);
+}
+
+async function createDemoClientIfNeeded() {
+  const demoEmail = "vijay@example.com";
+  let found = clientsListCache.find(c => c.email.toLowerCase() === demoEmail);
+  if (!found) {
+    const res = await fetch(`${API_BASE}/api/clients`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Vijay Siddhath",
+        email: demoEmail,
+        company: "Acme Corporation",
+        notes: "Key executive for enterprise mobile app launch"
+      })
+    });
+    const data = await res.json();
+    await loadClientsList();
+    found = data.client;
+  }
+  return found;
 }
 
 function setDefaultFollowupDate() {

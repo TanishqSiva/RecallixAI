@@ -1,0 +1,47 @@
+[
+  {
+    "meeting_id": "live-meeting",
+    "client_email": "colleague@example.com",
+    "client_name": "colleague@example.com",
+    "title": "Meeting live-meeting",
+    "timestamp": "2026-09-28T17:03:56.845000+00:00",
+    "captions": [
+      {
+        "speaker": "Colleague",
+        "text": "Hey Alex! Thanks for jumping on. We need to finalize the mobile app launch date and sync on deliverables.",
+        "timestamp": "2026-09-28T17:03:53.667484+00:00"
+      },
+      {
+        "speaker": "Alex Miller (You)",
+        "text": "I can commit to finishing the backend API documentation and sending it over by Thursday afternoon.",
+        "timestamp": "2026-09-28T17:03:54.165429+00:00"
+      },
+      {
+        "speaker": "Colleague",
+        "text": "Awesome. I will finalize the Figma UI mockups and invite beta testers by Friday.",
+        "timestamp": "2026-09-28T17:03:54.579874+00:00"
+      },
+      {
+        "speaker": "Alex Miller (You)",
+        "text": "Perfect! Let's schedule our follow-up sync for next Tuesday at 2 PM to review beta feedback.",
+        "timestamp": "2026-09-28T17:03:54.992083+00:00"
+      }
+    ],
+    "caption_count": 4,
+    "user_notes": "[Promise: Deliver backend API documentation by Thursday afternoon]\n[Action: Colleague finalizing Figma UI mockups by Friday]\n[Decision: Next sync scheduled for Tuesday 2 PM]",
+    "summary": "Meeting between User and colleague@example.com. Discussed project architecture, pricing tiers, and next steps.",
+    "promises_by_us": [
+      "Deliver backend API documentation by Thursday afternoon"
+    ],
+    "promises_by_them": [
+      "colleague@example.com to review submitted proposal and confirm next steps."
+    ],
+    "open_followups": [
+      "Confirm finalized follow-up date and agenda."
+    ],
+    "note_discrepancies": [
+      "Discrepancy detected: User scratchpad noted Friday delivery, but spoken transcript agreed to send pricing tiers by Thursday 5 PM."
+    ],
+    "suggested_followup_date": "2026-10-06T14:00:00Z"
+  }
+]

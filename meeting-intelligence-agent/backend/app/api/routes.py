@@ -8,6 +8,7 @@ from app.services.hindsight_service import hindsight_service
 from app.services.llm_service import llm_service, MeetingAnalysis
 from app.services.calendar_service import calendar_service
 from app.services.session_service import session_service
+from app.services.client_service import client_service
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +66,13 @@ class ScheduleEventResponse(BaseModel):
     html_link: Optional[str] = None
     meet_link: Optional[str] = None
     event: Dict[str, Any]
+
+class CreateClientRequest(BaseModel):
+    name: str
+    email: str
+    company: Optional[str] = ""
+    notes: Optional[str] = ""
+    phone: Optional[str] = ""
 
 # -------------------------------------------------------------
 # Ingestion & Streaming Endpoints (Chrome Extension -> Backend -> Web App)
@@ -229,6 +237,25 @@ def complete_meeting(req: CompleteMeetingRequest):
             meeting_id=meeting_id
         )
 
+        # Fetch structured captions captured from Chrome extension
+        live_session = session_service.get_session(meeting_id)
+        captions_list = live_session.get("captions", []) if live_session else []
+
+        # Save meeting & full extension transcript to client service
+        client_service.save_meeting(
+            meeting_id=meeting_id,
+            client_email=req.attendee_email,
+            title=live_session.get("title") if (live_session and live_session.get("title")) else f"Meeting with {req.attendee_email}",
+            captions=captions_list,
+            user_notes=req.user_notes,
+            summary=analysis.summary,
+            promises_by_us=analysis.promises_by_us,
+            promises_by_them=analysis.promises_by_them,
+            open_followups=analysis.missed_or_pending_followups,
+            note_discrepancies=analysis.note_discrepancies,
+            suggested_followup_date=analysis.suggested_followup_date
+        )
+
         # Mark meeting stream session as completed
         session_service.end_session(meeting_id)
 
@@ -321,6 +348,56 @@ def schedule_calendar_event(req: ScheduleEventRequest):
     except Exception as e:
         logger.error(f"Error scheduling Google Calendar event: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# -------------------------------------------------------------
+# Client & Past Meetings with Extension Transcripts Endpoints
+# -------------------------------------------------------------
+
+@router.get("/clients")
+def list_clients():
+    """Lists all saved clients with meeting counts and last meeting time."""
+    return {"clients": client_service.get_clients()}
+
+@router.post("/clients")
+def create_client(req: CreateClientRequest):
+    """Adds a new client or updates an existing client by email."""
+    client = client_service.add_client(
+        name=req.name,
+        email=req.email,
+        company=req.company,
+        notes=req.notes,
+        phone=req.phone
+    )
+    return {"status": "created", "client": client}
+
+@router.delete("/clients/{client_email}")
+def delete_client(client_email: str):
+    """Deletes a client from the system."""
+    success = client_service.delete_client(client_email)
+    return {"status": "deleted" if success else "not_found"}
+
+@router.get("/clients/{client_email}/meetings")
+def get_client_meetings(client_email: str):
+    """
+    Returns all past meetings for a specific client, complete with
+    spoken transcripts captured from the Chrome extension, notes, and AI summaries.
+    """
+    meetings = client_service.get_meetings_for_client(client_email)
+    return {"client_email": client_email, "count": len(meetings), "meetings": meetings}
+
+@router.get("/meetings")
+def get_all_meetings():
+    """Returns all past meetings across all clients."""
+    meetings = client_service.get_all_meetings()
+    return {"count": len(meetings), "meetings": meetings}
+
+@router.get("/meetings/{meeting_id}")
+def get_meeting_details(meeting_id: str):
+    """Returns single meeting details with full dialogue transcript."""
+    meeting = client_service.get_meeting(meeting_id)
+    if not meeting:
+        raise HTTPException(status_code=404, detail="Meeting not found")
+    return {"meeting": meeting}
 
 # -------------------------------------------------------------
 # Contact History & Hindsight Dossier Endpoints

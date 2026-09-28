@@ -1,0 +1,24 @@
+[
+  {
+    "id": "client_1790615036",
+    "name": "Colleague",
+    "email": "colleague@example.com",
+    "company": "",
+    "notes": "",
+    "phone": "",
+    "created_at": "2026-09-28T17:03:56.844463+00:00",
+    "meeting_count": 0,
+    "last_meeting": null
+  },
+  {
+    "id": "client_1790615187",
+    "name": "Vijay Siddhath",
+    "email": "vijay@example.com",
+    "company": "Acme Corp",
+    "notes": "",
+    "phone": "",
+    "created_at": "2026-09-28T17:06:27.716274+00:00",
+    "meeting_count": 0,
+    "last_meeting": null
+  }
+]
