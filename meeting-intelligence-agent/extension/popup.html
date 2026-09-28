@@ -7,9 +7,9 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      width: 320px;
+      width: 350px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: #0f172a;
+      background-color: #0b1120;
       color: #f8fafc;
       padding: 16px;
     }
@@ -19,40 +19,97 @@
       gap: 10px;
       margin-bottom: 12px;
       border-bottom: 1px solid #1e293b;
-      padding-bottom: 12px;
+      padding-bottom: 10px;
     }
     .logo-badge {
-      font-size: 20px;
+      font-size: 22px;
       background: linear-gradient(135deg, #6366f1, #a855f7);
       border-radius: 8px;
       padding: 4px 8px;
     }
-    .title-group h3 { font-size: 14px; color: #fff; }
+    .title-group h3 { font-size: 14px; font-weight: 700; color: #fff; }
     .title-group span { font-size: 11px; color: #94a3b8; }
-    .status-card {
-      background: #1e293b;
-      border: 1px solid #334155;
+
+    /* Big Overall Status Banner */
+    .overall-banner {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(59, 130, 246, 0.15));
+      border: 1px solid rgba(16, 185, 129, 0.35);
       border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 14px;
-    }
-    .status-row {
+      padding: 10px 12px;
+      margin-bottom: 12px;
       display: flex;
       align-items: center;
       gap: 8px;
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 700;
+      color: #34d399;
+      transition: all 0.3s;
+    }
+
+    /* Live Status Cards */
+    .status-box {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+    }
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
       margin-bottom: 6px;
     }
-    .status-dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: #10b981;
-      box-shadow: 0 0 6px #10b981;
-    }
-    .status-sub {
-      font-size: 11px;
+    .status-row:last-child { margin-bottom: 0; }
+    .status-label {
       color: #94a3b8;
+      font-size: 11px;
     }
+    .status-val {
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      display: inline-block;
+    }
+    .dot-green { background: #10b981; box-shadow: 0 0 8px #10b981; animation: pulse 2s infinite; }
+    .dot-yellow { background: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
+    .dot-red { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.2); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+
+    /* Live Transcript Feed Box */
+    .ticker-box {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-top: 6px;
+      font-size: 11px;
+      line-height: 1.4;
+      color: #cbd5e1;
+      max-height: 70px;
+      overflow-y: auto;
+      transition: border-color 0.3s;
+    }
+    .ticker-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      color: #818cf8;
+      font-weight: 700;
+      margin-top: 6px;
+      margin-bottom: 4px;
+    }
+
+    /* Buttons */
     .btn {
       display: flex;
       align-items: center;
@@ -60,23 +117,36 @@
       gap: 8px;
       width: 100%;
       padding: 10px 14px;
-      border-radius: 6px;
+      border-radius: 8px;
       border: none;
       font-weight: 700;
-      font-size: 13px;
+      font-size: 12px;
       cursor: pointer;
       text-decoration: none;
       transition: all 0.2s;
     }
     .btn-primary {
-      background: linear-gradient(135deg, #6366f1, #ec4899);
+      background: linear-gradient(135deg, #4f46e5, #9333ea);
       color: #fff;
-      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+      margin-top: 8px;
     }
     .btn-primary:hover {
       opacity: 0.95;
       transform: translateY(-1px);
     }
+    .btn-test {
+      background: #0284c7;
+      color: #fff;
+      margin-top: 6px;
+    }
+    .btn-test:hover { background: #0369a1; }
+    .btn-meet {
+      background: #059669;
+      color: #fff;
+      margin-top: 6px;
+    }
+    .btn-meet:hover { background: #047857; }
     .btn-ghost {
       background: transparent;
       border: 1px solid #334155;
@@ -85,7 +155,37 @@
       font-size: 11px;
       padding: 6px;
     }
-    .btn-ghost:hover { color: #fff; }
+    .btn-ghost:hover { color: #fff; border-color: #64748b; }
+
+    /* Test Feedback Toast */
+    .test-feedback {
+      display: none;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #34d399;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 11px;
+      margin-top: 6px;
+      line-height: 1.4;
+      animation: fadeIn 0.3s;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Instructions Box */
+    .guide-box {
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px dashed rgba(99, 102, 241, 0.3);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 11px;
+      color: #c7d2fe;
+      margin-bottom: 10px;
+      line-height: 1.4;
+    }
+    .guide-box strong { color: #fff; }
+
+    /* Settings Panel */
     .settings-panel {
       margin-top: 10px;
       padding-top: 10px;
@@ -100,21 +200,68 @@
   <div class="header">
     <div class="logo-badge">⚡</div>
     <div class="title-group">
-      <h3>Meeting Intel Companion</h3>
-      <span>Google Meet Closed Caption Ingestion</span>
+      <h3>Meeting AI Companion</h3>
+      <span>Google Meet Speech Ingestion</span>
     </div>
   </div>
 
-  <div class="status-card">
+  <!-- Overall Status Banner -->
+  <div class="overall-banner" id="overallBanner">
+    <span class="dot dot-green" id="overallDot"></span>
+    <span id="overallBannerText">Checking Connection...</span>
+  </div>
+
+  <!-- Quick Checklist for Kids & Beginners -->
+  <div class="guide-box">
+    <strong>🎯 2 Easy Steps to Use:</strong><br>
+    1. In Google Meet, click the <strong>[CC] button</strong> so words show.<br>
+    2. Click <strong>"Open Web Dashboard"</strong> to see notes & summary!
+  </div>
+
+  <!-- Status Box 1: Connections -->
+  <div class="status-box">
     <div class="status-row">
-      <span class="status-dot" id="companionDot"></span>
-      <span id="companionStatus">Ready & Listening</span>
+      <span class="status-label">App Server (Port 8000)</span>
+      <span class="status-val" id="serverStatusVal">
+        <span class="dot dot-yellow" id="serverDot"></span>
+        <span id="serverStatusText">Checking...</span>
+      </span>
     </div>
-    <div class="status-sub" id="companionMeetStatus">
-      Detects active Google Meet tabs automatically.
+    <div class="status-row">
+      <span class="status-label">Google Meet Call</span>
+      <span class="status-val" id="meetStatusVal">
+        <span class="dot dot-yellow" id="meetDot"></span>
+        <span id="meetStatusText">Detecting...</span>
+      </span>
     </div>
   </div>
 
+  <!-- Status Box 2: Captions Ingestion State -->
+  <div class="status-box">
+    <div class="status-row">
+      <span class="status-label">Speech Utterances Ingested</span>
+      <span class="status-val" id="captionStreamState">
+        <strong id="captionSentenceCount" style="color: #38bdf8;">0 sentences</strong>
+      </span>
+    </div>
+    <div class="ticker-label">💬 Last Spoken Sentence:</div>
+    <div class="ticker-box" id="recentCaptionTicker">
+      Waiting for speech from Google Meet call...
+    </div>
+  </div>
+
+  <!-- 1-Click Verification Test -->
+  <button class="btn btn-test" id="btnTestVoice">
+    🧪 Test Voice Stream (1-Click Test)
+  </button>
+  <div class="test-feedback" id="testFeedback"></div>
+
+  <!-- Open Meet Button -->
+  <button class="btn btn-meet" id="btnOpenMeet">
+    📞 Open Google Meet (New Tab)
+  </button>
+
+  <!-- Open Web Dashboard Button -->
   <button class="btn btn-primary" id="btnOpenDashboard">
     🚀 Open Web Dashboard ↗
   </button>

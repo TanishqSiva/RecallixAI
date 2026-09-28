@@ -28,6 +28,7 @@
   let lastSpeaker = "";
   let isListening = false;
   let captionObserver = null;
+  let capturedSentences = 0;
 
   // Selectors for Google Meet closed captions containers
   const CAPTION_CONTAINERS = [
@@ -49,7 +50,7 @@
   function extractSpeakerAndText(element) {
     if (!element) return null;
 
-    let speaker = "Unknown Speaker";
+    let speaker = "Speaker";
     for (const sel of SPEAKER_SELECTORS) {
       const spkEl = element.querySelector(sel);
       if (spkEl && spkEl.textContent.trim()) {
@@ -58,7 +59,7 @@
       }
     }
 
-    if (speaker === "Unknown Speaker") {
+    if (speaker === "Speaker") {
       const parent = element.closest('div[jscontroller="D1tHje"], .a4bIc');
       if (parent) {
         for (const sel of SPEAKER_SELECTORS) {
@@ -83,7 +84,7 @@
 
     if (!text) {
       text = element.textContent.trim();
-      if (speaker !== "Unknown Speaker" && text.startsWith(speaker)) {
+      if (speaker !== "Speaker" && text.startsWith(speaker)) {
         text = text.substring(speaker.length).trim();
       }
     }
@@ -96,7 +97,7 @@
     const meetingId = getMeetingId();
     const payload = {
       meeting_id: meetingId,
-      speaker: speaker,
+      speaker: speaker || "Participant",
       text: text,
       timestamp: new Date().toISOString()
     };
@@ -107,10 +108,10 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
-      updateBadgeStatus(true, text);
+      updateBadgeStatus(true, text, speaker);
     } catch (err) {
       console.warn("[Companion] Failed to push caption chunk to backend:", err);
-      updateBadgeStatus(false, "Backend unreachable");
+      updateBadgeStatus(false, "Backend unreachable", null);
     }
   }
 
@@ -135,6 +136,27 @@
 
       pushCaptionToBackend(parsed.speaker, parsed.text);
     }
+  }
+
+  function checkCcStateInMeet() {
+    const ccButtons = Array.from(document.querySelectorAll('button[aria-label*="caption" i], button[data-tooltip*="caption" i], button[jsname="r8qRAd"]'));
+    for (const btn of ccButtons) {
+      const label = (btn.getAttribute('aria-label') || btn.getAttribute('data-tooltip') || "").toLowerCase();
+      const pressed = btn.getAttribute('aria-pressed');
+      if (label.includes("turn off captions") || pressed === "true") {
+        return { isCaptionsOn: true, button: btn };
+      }
+      if (label.includes("turn on captions") || pressed === "false") {
+        return { isCaptionsOn: false, button: btn };
+      }
+    }
+    // Check if any captions container is actively visible
+    for (const sel of CAPTION_CONTAINERS) {
+      if (document.querySelector(sel)) {
+        return { isCaptionsOn: true, button: null };
+      }
+    }
+    return { isCaptionsOn: false, button: ccButtons[0] || null };
   }
 
   function startObserving() {
@@ -165,6 +187,23 @@
     isListening = true;
     console.log("[Companion] Live caption observation started.");
     injectFloatingStatusBadge();
+
+    // Check CC state every 2 seconds to keep badge 100% accurate
+    setInterval(() => {
+      injectFloatingStatusBadge();
+      const state = checkCcStateInMeet();
+      const ccOffAlert = document.getElementById("meet-ai-cc-off-alert");
+      const ccOnIndicator = document.getElementById("meet-ai-cc-on-indicator");
+      if (ccOffAlert && ccOnIndicator) {
+        if (state.isCaptionsOn) {
+          ccOffAlert.style.display = "none";
+          ccOnIndicator.style.display = "inline-flex";
+        } else {
+          ccOffAlert.style.display = "inline-flex";
+          ccOnIndicator.style.display = "none";
+        }
+      }
+    }, 2000);
   }
 
   // Floating In-Page Status Chip in Google Meet
@@ -176,49 +215,116 @@
     chip.innerHTML = `
       <div style="
         position: fixed;
-        bottom: 80px;
+        bottom: 85px;
         left: 20px;
-        background: rgba(15, 23, 42, 0.92);
+        background: rgba(11, 17, 32, 0.95);
         color: #f8fafc;
-        border: 1px solid #334155;
-        border-radius: 20px;
-        padding: 6px 14px;
-        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-        font-size: 11px;
+        border: 2px solid #3b82f6;
+        border-radius: 18px;
+        padding: 8px 14px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 12px;
         display: flex;
         align-items: center;
         gap: 8px;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-        z-index: 99999;
-        backdrop-filter: blur(8px);
-      ">
-        <span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 6px #10b981;" id="chipDot"></span>
-        <span id="chipText">Meeting Intel: Streaming Live</span>
+        box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+        z-index: 999999;
+        backdrop-filter: blur(12px);
+        transition: all 0.3s ease;
+      " id="chipContainer">
+        <!-- Live Dot -->
+        <span style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; box-shadow: 0 0 10px #10b981;" id="chipDot"></span>
+        
+        <!-- On Indicator -->
+        <span id="meet-ai-cc-on-indicator" style="display: inline-flex; align-items: center; gap: 4px;">
+          <strong style="color: #4ade80;">⚡ Meeting AI: Listening</strong>
+          <span id="chipCounter" style="color: #94a3b8; font-size: 11px;">(${capturedSentences} heard)</span>
+        </span>
+
+        <!-- Off Alert -->
+        <span id="meet-ai-cc-off-alert" style="display: none; align-items: center; gap: 6px; color: #fbbf24;">
+          ⚠️ <strong>Captions OFF</strong>
+          <button id="btnTurnOnCcDirect" style="
+            background: #f59e0b;
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 8px;
+            cursor: pointer;
+          ">👉 Turn on CC</button>
+        </span>
+
+        <!-- Test Speech Button -->
+        <button id="btnTestMeetLine" style="
+          background: #334155;
+          color: #e2e8f0;
+          border: 1px solid #475569;
+          border-radius: 10px;
+          font-size: 10px;
+          padding: 2px 8px;
+          cursor: pointer;
+        " title="Click to test speech ingestion">🧪 Test</button>
+
+        <!-- Open Dashboard Link -->
         <a href="${API_BASE_URL}/dashboard" target="_blank" style="
           color: #818cf8;
           text-decoration: none;
           font-weight: 700;
-          margin-left: 4px;
-          border-left: 1px solid #475569;
+          font-size: 11px;
+          border-left: 1px solid #334155;
           padding-left: 8px;
-        ">Open Dashboard ↗</a>
+        ">Dashboard ↗</a>
       </div>
     `;
     document.body.appendChild(chip);
+
+    // Click handler for turning on CC
+    const btnTurnOnCcDirect = document.getElementById("btnTurnOnCcDirect");
+    if (btnTurnOnCcDirect) {
+      btnTurnOnCcDirect.addEventListener("click", () => {
+        const state = checkCcStateInMeet();
+        if (state.button) {
+          state.button.click();
+        } else {
+          alert("Please click the [CC] button in Google Meet's bottom control bar!");
+        }
+      });
+    }
+
+    // Click handler for test line
+    const btnTestMeetLine = document.getElementById("btnTestMeetLine");
+    if (btnTestMeetLine) {
+      btnTestMeetLine.addEventListener("click", () => {
+        pushCaptionToBackend("You (Meet Test)", "Testing Meeting AI - Audio captions verified live inside call!");
+      });
+    }
   }
 
-  function updateBadgeStatus(online, snippet) {
+  function updateBadgeStatus(online, snippet, speaker) {
     const dot = document.getElementById("chipDot");
-    const txt = document.getElementById("chipText");
-    if (dot && txt) {
+    const container = document.getElementById("chipContainer");
+    const counter = document.getElementById("chipCounter");
+
+    if (dot && container) {
       if (online) {
+        capturedSentences++;
+        if (counter) counter.textContent = `(${capturedSentences} heard)`;
         dot.style.background = "#10b981";
-        dot.style.boxShadow = "0 0 6px #10b981";
-        txt.textContent = "Streaming Live: " + (snippet.length > 25 ? snippet.slice(0, 25) + "..." : snippet);
+        dot.style.boxShadow = "0 0 14px #10b981";
+
+        container.style.borderColor = "#10b981";
+        container.style.boxShadow = "0 0 20px rgba(16, 185, 129, 0.5)";
+        setTimeout(() => {
+          if (container) {
+            container.style.borderColor = "#3b82f6";
+            container.style.boxShadow = "0 8px 24px rgba(0,0,0,0.6)";
+          }
+        }, 1800);
       } else {
         dot.style.background = "#ef4444";
         dot.style.boxShadow = "none";
-        txt.textContent = "Backend Disconnected";
       }
     }
   }
@@ -238,10 +344,14 @@
     }
   });
 
-  // Start observation when DOM is ready
+  // Start observation immediately
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", startObserving);
+    document.addEventListener("DOMContentLoaded", () => {
+      injectFloatingStatusBadge();
+      startObserving();
+    });
   } else {
+    injectFloatingStatusBadge();
     startObserving();
   }
 })();

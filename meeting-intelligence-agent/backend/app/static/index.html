@@ -23,20 +23,20 @@
       <nav class="sidebar-nav">
         <button class="nav-item active" data-view="view-schedule">
           <span class="nav-icon">📅</span>
-          <span class="nav-label">Schedule & Briefings</span>
+          <span class="nav-label">1. Today's Meetings</span>
         </button>
         <button class="nav-item" data-view="view-studio">
           <span class="nav-icon">🎙️</span>
-          <span class="nav-label">Live Studio & Notes</span>
+          <span class="nav-label">2. Live Studio & Notes</span>
           <span class="nav-badge" id="streamBadge">LIVE</span>
         </button>
         <button class="nav-item" data-view="view-intelligence">
           <span class="nav-icon">⚡</span>
-          <span class="nav-label">Post-Call Intelligence</span>
+          <span class="nav-label">3. AI Summary & Follow-up</span>
         </button>
         <button class="nav-item" data-view="view-contacts">
           <span class="nav-icon">👥</span>
-          <span class="nav-label">Contact Dossiers</span>
+          <span class="nav-label">4. People & Memories</span>
         </button>
       </nav>
 
@@ -46,7 +46,7 @@
             <span class="pulse-dot" id="streamPulse"></span>
             <span class="stream-text" id="streamStatusText">Extension: Listening</span>
           </div>
-          <small id="activeMeetingCode">Room: meet-demo-sync</small>
+          <small id="activeMeetingCode">Room: meet-live-sync</small>
         </div>
         <div class="user-profile">
           <div class="user-avatar">A</div>
@@ -67,10 +67,53 @@
           <span class="topbar-sub" id="currentViewSubtitle">Autonomous context recall powered by Vectorize Hindsight Cloud</span>
         </div>
         <div class="topbar-right">
+          <button class="btn btn-magic-sm" id="btnLaunchDemoTop">✨ 1-Click Demo</button>
           <button class="btn btn-secondary btn-sm" id="btnGlobalRefresh">↻ Refresh Data</button>
           <button class="btn btn-primary btn-sm" id="btnLaunchStudioDirect">🎙️ Open Live Studio</button>
         </div>
       </header>
+
+      <!-- Kid-Friendly 3-Step Guide Banner -->
+      <div class="kid-guide-banner" id="kidGuideBanner">
+        <div class="guide-banner-header">
+          <div class="guide-title">
+            <span class="guide-emoji">🎈</span>
+            <div>
+              <h3>How Meeting AI Works (3 Super Simple Steps!)</h3>
+              <p>Anyone can use this in seconds — even a kid! Follow these 3 easy steps:</p>
+            </div>
+          </div>
+          <button class="btn btn-magic" id="btnLaunchDemo">
+            ✨ Try 1-Click Interactive Demo!
+          </button>
+        </div>
+
+        <div class="guide-steps-grid">
+          <div class="step-card" id="guideStep1">
+            <div class="step-num">Step 1</div>
+            <div class="step-icon">📞</div>
+            <h4>Start Google Meet</h4>
+            <p>Join any call and click the <strong>[CC] button</strong> so words show up.</p>
+            <a href="https://meet.google.com/new" target="_blank" class="step-link">Open Google Meet ↗</a>
+          </div>
+
+          <div class="step-card" id="guideStep2">
+            <div class="step-num">Step 2</div>
+            <div class="step-icon">🎙️</div>
+            <h4>Live Speech & Notes</h4>
+            <p>Spoken words stream in automatically. Type your private notes on the right!</p>
+            <button class="step-btn" id="btnGoToStudio">Open Live Studio →</button>
+          </div>
+
+          <div class="step-card" id="guideStep3">
+            <div class="step-num">Step 3</div>
+            <div class="step-icon">🚀</div>
+            <h4>Magic AI Summary</h4>
+            <p>Click <strong>"Wrap & Analyze"</strong>. AI makes a summary, saves tasks to Google Sheets, and books follow-ups!</p>
+            <button class="step-btn" id="btnGoToIntel">See Summary →</button>
+          </div>
+        </div>
+      </div>
 
       <!-- VIEW 1: Schedule & Briefings -->
       <section id="view-schedule" class="dashboard-view active">
@@ -79,7 +122,7 @@
           <div class="card">
             <div class="card-header">
               <div class="card-title-group">
-                <h3>Today's Scheduled Calls</h3>
+                <h3>📅 Today's Scheduled Calls</h3>
                 <span class="sub-text">Google Calendar API • Real-Time Sync</span>
               </div>
               <button class="btn btn-ghost btn-xs" id="btnRefreshCalendar">Sync Calendar</button>
@@ -95,10 +138,10 @@
           <div class="card briefing-panel-card">
             <div class="card-header">
               <div class="card-title-group">
-                <h3>Pre-Meeting Intelligence Brief</h3>
+                <h3>🧠 What AI Remembers About This Person</h3>
                 <span class="sub-text" id="briefingContactName">Select a meeting from the schedule</span>
               </div>
-              <span class="hindsight-pill">🧠 Hindsight Recall</span>
+              <span class="hindsight-pill">Vectorize Hindsight</span>
             </div>
             <div class="card-body">
               <div id="briefingLoading" class="loader-state" style="display: none;">
@@ -110,7 +153,7 @@
               </div>
               <div class="briefing-actions">
                 <button class="btn btn-accent btn-block" id="btnLaunchCallWithBrief">
-                  🎙️ Join & Launch Studio for this Meeting
+                  🎙️ Join & Open Live Studio for this Meeting
                 </button>
               </div>
             </div>
@@ -123,20 +166,22 @@
         <div class="studio-header-card">
           <div class="studio-status-row">
             <div class="studio-title-block">
-              <span class="live-pill">● LIVE INGESTION</span>
+              <span class="live-pill">● LIVE INGESTION ACTIVE</span>
               <h2 id="studioMeetingTitle">Live Meeting Studio</h2>
               <span class="meeting-id-pill" id="studioMeetingId">Active Session</span>
             </div>
             <div class="studio-tools">
-              <button class="btn btn-ghost btn-sm" id="btnSimulateDialogue" title="Simulate incoming caption">+ Simulate Line</button>
-              <button class="btn btn-ghost btn-sm" id="btnClearDialogue">Clear</button>
-              <button class="btn btn-accent btn-sm" id="btnStudioWrapMeeting">
+              <button class="btn btn-primary btn-sm" id="btnSimulateDialogue" title="Simulate incoming caption">
+                ✨ Speak Sample Line (Test Speech)
+              </button>
+              <button class="btn btn-ghost btn-sm" id="btnClearDialogue">Clear Dialogue</button>
+              <button class="btn btn-accent btn-sm" id="btnStudioWrapMeeting" style="font-weight: 800; background: linear-gradient(135deg, #a855f7, #6366f1); box-shadow: 0 0 16px rgba(168, 85, 247, 0.4);">
                 🚀 Wrap & Analyze Meeting
               </button>
             </div>
           </div>
           <p class="studio-explainer">
-            Dialogue is streamed in real time from the <strong>Chrome Companion Extension</strong> using client-side closed caption observation. Notes taken in the scratchpad below are continuously reconciled by the LLM post-call.
+            🎙️ Spoken words are captured live from Google Meet closed captions. Take private notes in your scratchpad below — when you click <strong>"Wrap & Analyze Meeting"</strong>, AI automatically creates your summary and syncs action items to Google Sheets!
           </p>
         </div>
 
@@ -144,25 +189,31 @@
           <!-- Left: Real-time Transcript Stream -->
           <div class="studio-pane dialogue-pane">
             <div class="pane-header">
-              <h4>Live Spoken Transcript (Google Meet)</h4>
+              <h4>🗣️ Live Spoken Dialogue (Google Meet)</h4>
               <span class="pane-meta" id="captionCount">0 utterances</span>
             </div>
             <div class="dialogue-feed" id="dialogueFeed">
-              <!-- Dynamically populated from /api/stream/session/{meeting_id} -->
+              <div class="empty-feed-hint">
+                <div style="font-size: 32px; margin-bottom: 8px;">🎙️</div>
+                <strong>Waiting for speech from Google Meet...</strong>
+                <p style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">
+                  Turn on <strong>[CC]</strong> in Google Meet, or click <strong style="color: #818cf8;">"✨ Speak Sample Line"</strong> above to test!
+                </p>
+              </div>
             </div>
           </div>
 
           <!-- Right: Interactive User Scratchpad -->
           <div class="studio-pane scratchpad-pane">
             <div class="pane-header">
-              <h4>Interactive User Scratchpad</h4>
+              <h4>📝 Your Private Notes (Scratchpad)</h4>
               <div class="quick-tags-group">
-                <button class="btn-tag" data-tag="[Promise: ]">+ Promise</button>
-                <button class="btn-tag" data-tag="[Decision: ]">+ Decision</button>
-                <button class="btn-tag" data-tag="[Action: ]">+ Follow-up</button>
+                <button class="btn-tag" data-tag="[Promise: ]">⭐ Promise</button>
+                <button class="btn-tag" data-tag="[Decision: ]">✅ Decision</button>
+                <button class="btn-tag" data-tag="[Action: ]">💡 Follow-up</button>
               </div>
             </div>
-            <textarea id="studioScratchpad" class="studio-textarea" placeholder="Take private notes, impressions, or agreed offline commitments during the call..."></textarea>
+            <textarea id="studioScratchpad" class="studio-textarea" placeholder="Jot down private notes, agreed commitments, or offline ideas during the call..."></textarea>
             <div class="scratchpad-statusbar">
               <span id="scratchpadSaveStatus">● Synced with backend</span>
               <button class="btn btn-link btn-xs" id="btnClearNotes">Clear Notes</button>
@@ -175,17 +226,17 @@
       <section id="view-intelligence" class="dashboard-view">
         <div id="intelLoadingState" class="loader-state" style="display: none;">
           <div class="spinner-large"></div>
-          <h3>Running Synthesis & Updating Hindsight Cloud</h3>
-          <p>Extracting commitments, analyzing note discrepancies, and retaining memories...</p>
+          <h3>Running AI Synthesis & Saving to Memory Cloud...</h3>
+          <p>Extracting commitments, syncing action items to Google Sheets, and updating Vectorize Hindsight...</p>
         </div>
 
         <div id="intelMainContent">
-          <!-- Hindsight Confirmation Banner -->
+          <!-- Hindsight & n8n Confirmation Banner -->
           <div class="memory-confirmation-banner">
             <div class="banner-icon">🧠</div>
             <div class="banner-text">
-              <h4>Retained in Vectorize Hindsight Memory Bank</h4>
-              <p id="hindsightMemoryDetails">Bank: bank_alex_example_com | Document: meet_demo_sync_1727500000</p>
+              <h4>Retained in Vectorize Hindsight Cloud & Action Items Synced</h4>
+              <p id="hindsightMemoryDetails">Bank: bank_alex_example_com | Google Sheets action items synchronized via n8n</p>
             </div>
             <span class="badge-success">Encrypted & Grounded</span>
           </div>
@@ -195,17 +246,17 @@
             <!-- Executive Summary -->
             <div class="intel-card col-span-2">
               <div class="intel-card-header">
-                <h4>📌 Executive Summary & Key Milestones</h4>
+                <h4>📌 Executive Summary & What Happened</h4>
               </div>
               <div class="intel-card-body" id="intelSummary">
-                No meeting analyzed yet. Complete a live meeting session to view extracted commitments and discrepancy analysis.
+                No meeting analyzed yet. Complete a live meeting session in Live Studio to view extracted commitments and AI analysis.
               </div>
             </div>
 
             <!-- Promises Made by Us -->
             <div class="intel-card">
               <div class="intel-card-header highlight-blue">
-                <h4>🤝 Promises Made by Us (User Deliverables)</h4>
+                <h4>🙋 Promises Made by You (Your Deliverables)</h4>
               </div>
               <ul class="intel-list" id="intelPromisesUs">
                 <li style="color: var(--text-muted);">No promises recorded yet.</li>
@@ -215,7 +266,7 @@
             <!-- Promises Made by Them -->
             <div class="intel-card">
               <div class="intel-card-header highlight-purple">
-                <h4>🎯 Promises Made by Attendees</h4>
+                <h4>👥 Promises Made by Attendees</h4>
               </div>
               <ul class="intel-list" id="intelPromisesThem">
                 <li style="color: var(--text-muted);">No attendee commitments recorded yet.</li>
@@ -235,7 +286,7 @@
             <!-- Note Discrepancy Reconciliation -->
             <div class="intel-card">
               <div class="intel-card-header highlight-red">
-                <h4>🔍 Scratchpad vs. Spoken Discrepancies</h4>
+                <h4>🔍 Notes Check (Scratchpad vs. Spoken Dialogue)</h4>
               </div>
               <ul class="intel-list" id="intelDiscrepancies">
                 <li style="color: var(--text-muted);">No discrepancies detected.</li>
@@ -265,7 +316,7 @@
                 <input type="datetime-local" id="followupDateTime" />
               </div>
               <div class="form-group">
-                <label>Attendees</label>
+                <label>Attendee Email</label>
                 <input type="text" id="followupAttendees" placeholder="attendee@example.com" />
               </div>
               <div class="form-group">
@@ -273,14 +324,14 @@
                 <input type="number" id="followupDuration" value="30" step="15" />
               </div>
               <div class="form-group col-span-2">
-                <label>Agenda & Action Items (Auto-Filled from Commitments)</label>
+                <label>Agenda & Action Items (Pre-Filled from Meeting Commitments)</label>
                 <textarea id="followupAgenda" rows="3" placeholder="Agreed discussion points and deliverables will be pre-filled here..."></textarea>
               </div>
             </div>
 
             <div class="followup-footer">
               <button class="btn btn-success btn-lg" id="btnConfirmSchedule">
-                📅 Confirm & Schedule Next Meeting via Google Calendar
+                📅 Confirm & Book Follow-Up Meeting (via Google Calendar & n8n)
               </button>
               <div id="calendarSuccessBox" class="success-box" style="display: none;"></div>
             </div>
@@ -319,7 +370,7 @@
               <!-- Cumulative Brief -->
               <div class="card mb-4">
                 <div class="card-header">
-                  <h4>🧠 Cumulative Hindsight Relationship Context</h4>
+                  <h4>🧠 What AI Remembers About This Relationship</h4>
                 </div>
                 <div class="card-body">
                   <div id="dossierBriefing" class="dossier-text-content">
@@ -331,7 +382,7 @@
               <!-- Chronological Meeting Timeline -->
               <div class="card">
                 <div class="card-header">
-                  <h4>📜 Chronological Meeting Memory Timeline</h4>
+                  <h4>📜 Meeting Memory Timeline</h4>
                 </div>
                 <div class="card-body">
                   <div id="dossierTimeline" class="timeline-container">

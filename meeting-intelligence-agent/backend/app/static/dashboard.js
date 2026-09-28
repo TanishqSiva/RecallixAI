@@ -113,10 +113,10 @@ function switchView(viewName) {
   if (targetView) targetView.classList.add("active");
 
   const titles = {
-    schedule: { title: "Today's Schedule & Pre-Call Briefings", sub: "Autonomous context recall powered by Vectorize Hindsight Cloud" },
-    studio: { title: "Live Meeting Studio & Scratchpad", sub: "Real-time Google Meet stream ingested from Chrome Companion Extension" },
-    intelligence: { title: "Post-Call Intelligence & Follow-up Center", sub: "Structured commitment analysis, discrepancy detection & Google Calendar actions" },
-    contacts: { title: "Contact Dossiers & Memory Vault", sub: "Cumulative entity memories and timeline history stored in Hindsight Cloud" }
+    schedule: { title: "📅 1. Today's Meetings & Past Memory", sub: "Check your upcoming calls and see what AI remembers about the attendees" },
+    studio: { title: "🎙️ 2. Live Meeting Studio & Scratchpad", sub: "Watch speech stream live from Google Meet and jot down private notes" },
+    intelligence: { title: "⚡ 3. Post-Meeting AI Summary & Follow-up", sub: "Gemini commitments, Google Sheets action items & 1-click Google Calendar booking" },
+    contacts: { title: "👥 4. People & Relationship Memories", sub: "Everything Vectorize Hindsight remembers across all your calls" }
   };
 
   if (titles[viewName]) {
@@ -231,21 +231,31 @@ function renderDialogueCaptions(captions) {
   dialogueFeed.innerHTML = "";
 
   if (captions.length === 0) {
-    dialogueFeed.innerHTML = `<div style="color: var(--text-muted); text-align: center; padding: 30px;">Waiting for real-time speech from Google Meet extension stream...</div>`;
+    dialogueFeed.innerHTML = `
+      <div class="empty-feed-hint">
+        <div style="font-size: 36px; margin-bottom: 8px;">🎙️</div>
+        <strong style="font-size: 15px; color: #fff;">Waiting for speech from Google Meet...</strong>
+        <p style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">
+          Turn on <strong>[CC]</strong> in Google Meet, or click <strong style="color: #818cf8;">"✨ Speak Sample Line"</strong> above to test!
+        </p>
+      </div>
+    `;
     return;
   }
 
   captions.forEach(c => {
     const el = document.createElement("div");
-    el.className = "utterance";
+    const spk = (c.speaker || "Speaker").trim();
+    const isHost = spk.toLowerCase().includes("alex") || spk.toLowerCase().includes("host") || spk.toLowerCase().includes("you");
+    el.className = `utterance caption-item ${isHost ? 'host' : 'guest'}`;
     const timeStr = c.timestamp ? new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : "";
 
     el.innerHTML = `
       <div class="utterance-header">
-        <span class="speaker-tag">${escapeHtml(c.speaker || "Participant")}:</span>
+        <span class="speaker-tag caption-speaker ${isHost ? 'host' : 'guest'}">${isHost ? '👤' : '👥'} ${escapeHtml(spk)}:</span>
         <span class="time-tag">${timeStr}</span>
       </div>
-      <div class="utterance-text">${escapeHtml(c.text || "")}</div>
+      <div class="utterance-text caption-text">${escapeHtml(c.text || "")}</div>
     `;
     dialogueFeed.appendChild(el);
   });
@@ -527,6 +537,17 @@ function setupEventListeners() {
     await loadContactsList();
   });
 
+  // Kid-Friendly Step & Demo Buttons
+  const btnLaunchDemo = document.getElementById("btnLaunchDemo");
+  const btnLaunchDemoTop = document.getElementById("btnLaunchDemoTop");
+  const btnGoToStudio = document.getElementById("btnGoToStudio");
+  const btnGoToIntel = document.getElementById("btnGoToIntel");
+
+  if (btnLaunchDemo) btnLaunchDemo.addEventListener("click", launchInteractiveDemo);
+  if (btnLaunchDemoTop) btnLaunchDemoTop.addEventListener("click", launchInteractiveDemo);
+  if (btnGoToStudio) btnGoToStudio.addEventListener("click", () => switchView("studio"));
+  if (btnGoToIntel) btnGoToIntel.addEventListener("click", () => switchView("intelligence"));
+
   // Scratchpad Quick Tags
   document.querySelectorAll(".btn-tag").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -545,10 +566,10 @@ function setupEventListeners() {
   // Studio Simulation line
   btnSimulateDialogue.addEventListener("click", async () => {
     const quotes = [
-      { speaker: "Participant", text: "We need the SSO SAML configuration confirmed before our security audit." },
-      { speaker: "Host", text: "I can guarantee the documentation will be sent by Thursday morning." },
-      { speaker: "Participant", text: "Excellent. Let's make sure we review the SLA tier next week." },
-      { speaker: "Host", text: "Agreed. I will put a 30-minute calendar invite on both our schedules." }
+      { speaker: "Colleague", text: "We need the SSO SAML configuration confirmed before our security audit." },
+      { speaker: "Alex Miller (You)", text: "I can guarantee the documentation will be sent by Thursday morning." },
+      { speaker: "Colleague", text: "Excellent. Let's make sure we review the SLA tier next week." },
+      { speaker: "Alex Miller (You)", text: "Agreed. I will put a 30-minute calendar invite on both our schedules." }
     ];
     const pick = quotes[Math.floor(Math.random() * quotes.length)];
     await fetch(`${API_BASE}/api/stream/caption`, {
@@ -564,8 +585,7 @@ function setupEventListeners() {
   });
 
   btnClearDialogue.addEventListener("click", () => {
-    dialogueFeed.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 20px;">Captions cleared.</div>';
-    captionCount.textContent = "0 utterances";
+    renderDialogueCaptions([]);
   });
 
   if (btnClearNotes) {
@@ -574,6 +594,55 @@ function setupEventListeners() {
       studioScratchpad.dispatchEvent(new Event("input"));
     });
   }
+}
+
+async function launchInteractiveDemo() {
+  switchView("studio");
+  studioMeetingTitle.textContent = "Live Meeting: Mobile App Launch Sync";
+  activeAttendeeEmail = "colleague@example.com";
+  
+  // Clear dialogue
+  dialogueFeed.innerHTML = "";
+  captionCount.textContent = "0 utterances";
+
+  const demoLines = [
+    { speaker: "Colleague", text: "Hey Alex! Thanks for jumping on. We need to finalize the mobile app launch date and sync on deliverables." },
+    { speaker: "Alex Miller (You)", text: "I can commit to finishing the backend API documentation and sending it over by Thursday afternoon." },
+    { speaker: "Colleague", text: "Awesome. I will finalize the Figma UI mockups and invite beta testers by Friday." },
+    { speaker: "Alex Miller (You)", text: "Perfect! Let's schedule our follow-up sync for next Tuesday at 2 PM to review beta feedback." }
+  ];
+
+  for (let i = 0; i < demoLines.length; i++) {
+    const line = demoLines[i];
+    await fetch(`${API_BASE}/api/stream/caption`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        meeting_id: activeMeetingId,
+        speaker: line.speaker,
+        text: line.text
+      })
+    });
+    await new Promise(r => setTimeout(r, 400));
+    await syncActiveMeetingStream();
+  }
+
+  // Pre-fill notes
+  studioScratchpad.value = `[Promise: Deliver backend API documentation by Thursday afternoon]\n[Action: Colleague finalizing Figma UI mockups by Friday]\n[Decision: Next sync scheduled for Tuesday 2 PM]`;
+  studioScratchpad.dispatchEvent(new Event("input"));
+
+  await new Promise(r => setTimeout(r, 600));
+
+  // Automatically wrap meeting and synthesize
+  await wrapCallAndAnalyze();
+
+  // Scroll smoothly down to follow-up form
+  setTimeout(() => {
+    const followupCard = document.querySelector(".followup-card");
+    if (followupCard) {
+      followupCard.scrollIntoView({ behavior: "smooth" });
+    }
+  }, 1000);
 }
 
 function setDefaultFollowupDate() {
