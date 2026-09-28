@@ -139,7 +139,7 @@ OUTPUT JSON SCHEMA:
         for line in combined.splitlines():
             line_str = line.strip()
             lower_line = line_str.lower()
-            if any(k in lower_line for k in ["i will send our", "sarah will", "attendee will", "they will", "in return, i will"]):
+            if any(k in lower_line for k in ["i will send our", "they will", "attendee will", "client will", "in return, i will"]):
                 promises_them.append(line_str)
             elif "questionnaire" in lower_line or "security compliance" in lower_line:
                 promises_them.append(line_str)

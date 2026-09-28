@@ -33,9 +33,6 @@ class SessionService:
         self._sessions: Dict[str, MeetingSession] = {}
         self._active_meeting_id: Optional[str] = None
 
-        # Pre-seed a default demo meeting session so dashboard has immediate live data
-        self.seed_demo_session()
-
     def seed_demo_session(self):
         demo_id = "meet-demo-sync"
         session = MeetingSession(meeting_id=demo_id, title="Strategy & Pricing Sync with Sarah Connor")

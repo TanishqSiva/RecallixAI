@@ -228,31 +228,6 @@ class HindsightService:
         bank_id = self.get_or_create_bank(user_id)
         contacts_map: Dict[str, Dict[str, Any]] = {}
 
-        # Default seeds if empty
-        if not self.local_memory_store.get(bank_id):
-            self.retain_meeting_memory(
-                user_id=user_id,
-                attendee_email="sarah.connor@acme.org",
-                content=(
-                    "Initial Discovery Session:\n"
-                    "• Discussed enterprise tier migration and cloud security architecture.\n"
-                    "• Sarah promised to send their corporate technical compliance checklist.\n"
-                    "• Alex promised to deliver enterprise pricing models with volume discounts.\n"
-                    "• Key decision: Selected AWS us-east-1 for dedicated VPC tenancy."
-                ),
-                meeting_id="init-discovery-01"
-            )
-            self.retain_meeting_memory(
-                user_id=user_id,
-                attendee_email="marcus.wright@cyberdyne.io",
-                content=(
-                    "Quarterly Partnership Review:\n"
-                    "• Marcus agreed to provide beta API credentials by next Monday.\n"
-                    "• Agreed to schedule pilot launch demonstration for engineering leadership."
-                ),
-                meeting_id="pilot-review-02"
-            )
-
         for item in self.local_memory_store.get(bank_id, []):
             email = item.get("metadata", {}).get("attendee_email")
             if email:

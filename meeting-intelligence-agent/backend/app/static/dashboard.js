@@ -8,8 +8,8 @@
  */
 
 const API_BASE = ""; // Same origin (FastAPI host)
-let activeMeetingId = "meet-demo-sync";
-let activeAttendeeEmail = "sarah.connor@acme.org";
+let activeMeetingId = "live-meeting";
+let activeAttendeeEmail = "";
 let streamPollingTimer = null;
 let currentSessionData = null;
 
@@ -43,7 +43,7 @@ const scratchpadSaveStatus = document.getElementById("scratchpadSaveStatus");
 const btnStudioWrapMeeting = document.getElementById("btnStudioWrapMeeting");
 const btnSimulateDialogue = document.getElementById("btnSimulateDialogue");
 const btnClearDialogue = document.getElementById("btnClearDialogue");
-const btnLoadDemoNotes = document.getElementById("btnLoadDemoNotes");
+const btnClearNotes = document.getElementById("btnClearNotes");
 
 // View 3 Elements
 const intelLoadingState = document.getElementById("intelLoadingState");
@@ -83,7 +83,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Load initial data
   await loadTodaySchedule();
-  await loadInitialBriefing("sarah.connor@acme.org");
   await syncActiveMeetingStream();
   await loadContactsList();
 
@@ -168,8 +167,17 @@ async function loadTodaySchedule() {
 
         todayMeetingsList.appendChild(item);
       });
+      // Load briefing for first scheduled meeting if any
+      const firstExt = (data.events[0].attendees || []).find(a => (a.email || a) !== "alex@example.com");
+      const firstEmail = firstExt ? (firstExt.email || firstExt) : "";
+      if (firstEmail) {
+        activeAttendeeEmail = firstEmail;
+        loadInitialBriefing(firstEmail);
+      }
     } else {
-      todayMeetingsList.innerHTML = `<div style="color: var(--text-muted); text-align: center; padding: 20px;">No scheduled calls for today.</div>`;
+      todayMeetingsList.innerHTML = `<div style="color: var(--text-muted); text-align: center; padding: 25px;">No scheduled calls for today.</div>`;
+      briefingContactName.textContent = "Select a meeting from the schedule";
+      briefingContent.textContent = "Select an upcoming meeting on the left to recall previous agreements, unresolved topics, and background dossiers from Hindsight.";
     }
   } catch (err) {
     console.error("Error loading today's schedule:", err);
@@ -177,6 +185,7 @@ async function loadTodaySchedule() {
 }
 
 async function loadInitialBriefing(attendeeEmail) {
+  if (!attendeeEmail) return;
   briefingContactName.textContent = `Target: ${attendeeEmail}`;
   briefingLoading.style.display = "flex";
   briefingContent.textContent = "";
@@ -208,8 +217,8 @@ async function syncActiveMeetingStream() {
     const session = await res.json();
     currentSessionData = session;
 
-    studioMeetingTitle.textContent = session.title || `Meeting: ${activeMeetingId}`;
-    studioMeetingId.textContent = session.meeting_id;
+    studioMeetingTitle.textContent = session.title || "Live Meeting Studio";
+    studioMeetingId.textContent = session.meeting_id || "Active Session";
     studioScratchpad.value = session.user_notes || "";
     renderDialogueCaptions(session.captions || []);
   } catch (err) {
@@ -294,9 +303,11 @@ async function wrapCallAndAnalyze() {
   intelMainContent.style.display = "none";
 
   const notes = studioScratchpad.value;
-  const transcriptText = (currentSessionData && currentSessionData.captions)
+  const transcriptText = (currentSessionData && currentSessionData.captions && currentSessionData.captions.length > 0)
     ? currentSessionData.captions.map(c => `${c.speaker}: ${c.text}`).join("\n")
-    : "Sarah: Please send pricing tiers by Thursday.\nAlex: I will deliver pricing sheet by Thursday.";
+    : (notes ? `Meeting notes:\n${notes}` : "General project sync and action items review.");
+
+  const targetEmail = activeAttendeeEmail || "attendee@example.com";
 
   try {
     const res = await fetch(`${API_BASE}/api/meetings/complete`, {
@@ -304,7 +315,7 @@ async function wrapCallAndAnalyze() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         user_id: "alex@example.com",
-        attendee_email: activeAttendeeEmail,
+        attendee_email: targetEmail,
         transcript: transcriptText,
         user_notes: notes,
         meeting_id: activeMeetingId
@@ -450,6 +461,14 @@ async function loadContactsList() {
 
       // Load first contact dossier by default
       loadContactDossier(data.contacts[0].email, data.contacts[0].name);
+    } else {
+      contactsContainer.innerHTML = `<div style="color: var(--text-muted); text-align: center; padding: 25px;">No contacts tracked yet.<br>Contacts will appear here once meetings are completed and retained in Hindsight.</div>`;
+      dossierAvatar.textContent = "--";
+      dossierContactName.textContent = "Select a Contact";
+      dossierContactEmail.textContent = "Choose a contact to view memory context";
+      dossierMemoryCount.textContent = "0 Records";
+      dossierBriefing.textContent = "Select a contact from the list on the left to recall historical commitments and memory context from Hindsight.";
+      dossierTimeline.innerHTML = "";
     }
   } catch (err) {
     console.error("Error loading contacts:", err);
@@ -457,7 +476,7 @@ async function loadContactsList() {
 }
 
 async function loadContactDossier(email, name) {
-  dossierAvatar.textContent = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "SC";
+  dossierAvatar.textContent = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "--";
   dossierContactName.textContent = name || email;
   dossierContactEmail.textContent = email;
   dossierBriefing.textContent = "Querying Vectorize Hindsight memory bank...";
@@ -467,7 +486,7 @@ async function loadContactDossier(email, name) {
     const res = await fetch(`${API_BASE}/api/contacts/${encodeURIComponent(email)}/dossier?user_id=alex@example.com`);
     const dossier = await res.json();
 
-    dossierMemoryCount.textContent = `${dossier.memory_count || 1} Memory Records`;
+    dossierMemoryCount.textContent = `${dossier.memory_count || 0} Memory Records`;
     dossierBriefing.textContent = dossier.briefing || "No historical memories found.";
 
     if (dossier.timeline && dossier.timeline.length > 0) {
@@ -526,10 +545,10 @@ function setupEventListeners() {
   // Studio Simulation line
   btnSimulateDialogue.addEventListener("click", async () => {
     const quotes = [
-      { speaker: "Sarah Connor", text: "We need the SSO SAML configuration confirmed before our security audit." },
-      { speaker: "Alex", text: "I can guarantee the SAML documentation will be sent by Thursday morning." },
-      { speaker: "Sarah Connor", text: "Excellent. Let's make sure we review the SLA tier next Tuesday." },
-      { speaker: "Alex", text: "Agreed. I will put a 30-minute calendar invite on both our schedules." }
+      { speaker: "Participant", text: "We need the SSO SAML configuration confirmed before our security audit." },
+      { speaker: "Host", text: "I can guarantee the documentation will be sent by Thursday morning." },
+      { speaker: "Participant", text: "Excellent. Let's make sure we review the SLA tier next week." },
+      { speaker: "Host", text: "Agreed. I will put a 30-minute calendar invite on both our schedules." }
     ];
     const pick = quotes[Math.floor(Math.random() * quotes.length)];
     await fetch(`${API_BASE}/api/stream/caption`, {
@@ -549,14 +568,12 @@ function setupEventListeners() {
     captionCount.textContent = "0 utterances";
   });
 
-  btnLoadDemoNotes.addEventListener("click", () => {
-    studioScratchpad.value = 
-`[Promise: I will deliver the updated enterprise pricing breakdown by Friday afternoon]
-[Decision: Agreed to use SSO SAML for user provisioning]
-[Action: Sarah needs to send over technical security questionnaire]
-Note: Verify 99.9% SLA commitment before next call.`;
-    studioScratchpad.dispatchEvent(new Event("input"));
-  });
+  if (btnClearNotes) {
+    btnClearNotes.addEventListener("click", () => {
+      studioScratchpad.value = "";
+      studioScratchpad.dispatchEvent(new Event("input"));
+    });
+  }
 }
 
 function setDefaultFollowupDate() {

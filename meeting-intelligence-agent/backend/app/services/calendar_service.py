@@ -12,22 +12,8 @@ class CalendarService:
     def __init__(self):
         self.service = None
         self._init_client()
-        # In-memory store for fallback/simulation mode
-        self.simulated_events: List[Dict[str, Any]] = [
-            {
-                "id": "mock-event-1",
-                "summary": "Project Sync with Sarah Connor",
-                "description": "Discussing enterprise pricing tiers, SAML SSO integration, and roadmap.",
-                "start": (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=5)).isoformat(),
-                "end": (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=35)).isoformat(),
-                "hangoutLink": "https://meet.google.com/abc-defg-hij",
-                "attendees": [
-                    {"email": "alex@example.com", "displayName": "Alex (Host)"},
-                    {"email": "sarah.connor@acme.org", "displayName": "Sarah Connor"}
-                ],
-                "status": "confirmed"
-            }
-        ]
+        # In-memory store for events scheduled during runtime
+        self.simulated_events: List[Dict[str, Any]] = []
 
     def _init_client(self):
         """Initializes Google Calendar API client using OAuth2 token if present."""
@@ -102,14 +88,6 @@ class CalendarService:
             ev_start = datetime.datetime.fromisoformat(ev["start"])
             if now <= ev_start <= window_end or (ev_start <= now <= datetime.datetime.fromisoformat(ev["end"])):
                 matching.append(ev)
-
-        # If none matched window, return sample upcoming meeting for demonstration
-        if not matching:
-            demo_event = dict(self.simulated_events[0])
-            demo_event["start"] = (now + datetime.timedelta(minutes=5)).isoformat()
-            demo_event["end"] = (now + datetime.timedelta(minutes=35)).isoformat()
-            matching.append(demo_event)
-
         return matching
 
     def get_todays_meetings(self) -> List[Dict[str, Any]]:
@@ -149,42 +127,8 @@ class CalendarService:
             except Exception as e:
                 logger.error(f"Error fetching today's Google Calendar events: {e}")
 
-        # Simulated fallback list of today's schedule
-        t1 = (now - datetime.timedelta(hours=2)).isoformat()
-        t1_end = (now - datetime.timedelta(hours=1, minutes=30)).isoformat()
-        t2 = (now + datetime.timedelta(minutes=15)).isoformat()
-        t2_end = (now + datetime.timedelta(minutes=45)).isoformat()
-        t3 = (now + datetime.timedelta(hours=3)).isoformat()
-        t3_end = (now + datetime.timedelta(hours=3, minutes=45)).isoformat()
-
-        return [
-            {
-                "id": "cal-today-1",
-                "summary": "Enterprise Pricing & Architecture Sync",
-                "description": "Deep-dive with Sarah Connor on enterprise pricing tiers, VPC architecture, and compliance.",
-                "start": t2,
-                "end": t2_end,
-                "hangoutLink": "https://meet.google.com/abc-defg-hij",
-                "attendees": [
-                    {"email": "alex@example.com", "displayName": "Alex (Host)"},
-                    {"email": "sarah.connor@acme.org", "displayName": "Sarah Connor"}
-                ],
-                "status": "confirmed"
-            },
-            {
-                "id": "cal-today-2",
-                "summary": "API Integration Kickoff",
-                "description": "Review webhook schemas and rate limiting policies with Marcus Wright.",
-                "start": t3,
-                "end": t3_end,
-                "hangoutLink": "https://meet.google.com/klm-nopq-rst",
-                "attendees": [
-                    {"email": "alex@example.com", "displayName": "Alex (Host)"},
-                    {"email": "marcus.wright@cyberdyne.io", "displayName": "Marcus Wright"}
-                ],
-                "status": "confirmed"
-            }
-        ]
+        # Return runtime scheduled events if any exist
+        return list(self.simulated_events)
 
     def schedule_followup(self, event_data: Dict[str, Any]) -> Dict[str, Any]:
         """

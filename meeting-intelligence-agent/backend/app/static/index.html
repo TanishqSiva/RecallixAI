@@ -96,7 +96,7 @@
             <div class="card-header">
               <div class="card-title-group">
                 <h3>Pre-Meeting Intelligence Brief</h3>
-                <span class="sub-text" id="briefingContactName">Target: sarah.connor@acme.org</span>
+                <span class="sub-text" id="briefingContactName">Select a meeting from the schedule</span>
               </div>
               <span class="hindsight-pill">🧠 Hindsight Recall</span>
             </div>
@@ -106,7 +106,7 @@
                 <p>Querying Vectorize Hindsight Bank for past commitments & agreements...</p>
               </div>
               <div id="briefingContent" class="briefing-content-box">
-                <!-- Dynamically populated -->
+                Select an upcoming meeting on the left to recall previous agreements, unresolved topics, and background dossiers from Hindsight.
               </div>
               <div class="briefing-actions">
                 <button class="btn btn-accent btn-block" id="btnLaunchCallWithBrief">
@@ -124,8 +124,8 @@
           <div class="studio-status-row">
             <div class="studio-title-block">
               <span class="live-pill">● LIVE INGESTION</span>
-              <h2 id="studioMeetingTitle">Strategy & Pricing Sync with Sarah Connor</h2>
-              <span class="meeting-id-pill" id="studioMeetingId">meet-demo-sync</span>
+              <h2 id="studioMeetingTitle">Live Meeting Studio</h2>
+              <span class="meeting-id-pill" id="studioMeetingId">Active Session</span>
             </div>
             <div class="studio-tools">
               <button class="btn btn-ghost btn-sm" id="btnSimulateDialogue" title="Simulate incoming caption">+ Simulate Line</button>
@@ -145,7 +145,7 @@
           <div class="studio-pane dialogue-pane">
             <div class="pane-header">
               <h4>Live Spoken Transcript (Google Meet)</h4>
-              <span class="pane-meta" id="captionCount">5 utterances</span>
+              <span class="pane-meta" id="captionCount">0 utterances</span>
             </div>
             <div class="dialogue-feed" id="dialogueFeed">
               <!-- Dynamically populated from /api/stream/session/{meeting_id} -->
@@ -165,7 +165,7 @@
             <textarea id="studioScratchpad" class="studio-textarea" placeholder="Take private notes, impressions, or agreed offline commitments during the call..."></textarea>
             <div class="scratchpad-statusbar">
               <span id="scratchpadSaveStatus">● Synced with backend</span>
-              <button class="btn btn-link btn-xs" id="btnLoadDemoNotes">Reload Demo Notes</button>
+              <button class="btn btn-link btn-xs" id="btnClearNotes">Clear Notes</button>
             </div>
           </div>
         </div>
@@ -198,7 +198,7 @@
                 <h4>📌 Executive Summary & Key Milestones</h4>
               </div>
               <div class="intel-card-body" id="intelSummary">
-                Meeting concluded. Key milestones and discussion highlights will be summarized here.
+                No meeting analyzed yet. Complete a live meeting session to view extracted commitments and discrepancy analysis.
               </div>
             </div>
 
@@ -208,7 +208,7 @@
                 <h4>🤝 Promises Made by Us (User Deliverables)</h4>
               </div>
               <ul class="intel-list" id="intelPromisesUs">
-                <li>I will send enterprise pricing sheet by Thursday 5 PM.</li>
+                <li style="color: var(--text-muted);">No promises recorded yet.</li>
               </ul>
             </div>
 
@@ -218,7 +218,7 @@
                 <h4>🎯 Promises Made by Attendees</h4>
               </div>
               <ul class="intel-list" id="intelPromisesThem">
-                <li>Sarah will provide security compliance questionnaire by tomorrow morning.</li>
+                <li style="color: var(--text-muted);">No attendee commitments recorded yet.</li>
               </ul>
             </div>
 
@@ -228,7 +228,7 @@
                 <h4>❓ Unresolved Questions & Pending Follow-Ups</h4>
               </div>
               <ul class="intel-list" id="intelOpenFollowups">
-                <li>Clarify SLA commitments for 99.9% uptime.</li>
+                <li style="color: var(--text-muted);">No open items detected.</li>
               </ul>
             </div>
 
@@ -238,7 +238,7 @@
                 <h4>🔍 Scratchpad vs. Spoken Discrepancies</h4>
               </div>
               <ul class="intel-list" id="intelDiscrepancies">
-                <li>Discrepancy: Scratchpad noted Friday pricing delivery, but spoken words agreed to Thursday 5 PM.</li>
+                <li style="color: var(--text-muted);">No discrepancies detected.</li>
               </ul>
             </div>
           </div>
@@ -249,8 +249,8 @@
               <div class="followup-title">
                 <span class="calendar-icon">📅</span>
                 <div>
-                  <h3>Do you want to schedule the next meeting with <span id="followupAttendeeName">Sarah Connor</span>?</h3>
-                  <p>Agreed target reconnect date detected: <strong id="followupSuggestedDate">Next Tuesday at 2:00 PM</strong></p>
+                  <h3>Schedule Follow-Up Meeting with <span id="followupAttendeeName">Attendee</span></h3>
+                  <p>Agreed target reconnect date: <strong id="followupSuggestedDate">Select a date</strong></p>
                 </div>
               </div>
             </div>
@@ -258,23 +258,23 @@
             <div class="followup-form-grid">
               <div class="form-group">
                 <label>Event Title</label>
-                <input type="text" id="followupTitle" value="Follow-up: Review Pricing & Deliverables" />
+                <input type="text" id="followupTitle" placeholder="e.g. Project Sync & Action Items" />
               </div>
               <div class="form-group">
-                <label>Date & Time (ISO)</label>
+                <label>Date & Time</label>
                 <input type="datetime-local" id="followupDateTime" />
               </div>
               <div class="form-group">
                 <label>Attendees</label>
-                <input type="text" id="followupAttendees" value="sarah.connor@acme.org" />
+                <input type="text" id="followupAttendees" placeholder="attendee@example.com" />
               </div>
               <div class="form-group">
                 <label>Duration (Minutes)</label>
                 <input type="number" id="followupDuration" value="30" step="15" />
               </div>
               <div class="form-group col-span-2">
-                <label>Auto-Filled Agenda (Derived from Commitments)</label>
-                <textarea id="followupAgenda" rows="3"></textarea>
+                <label>Agenda & Action Items (Auto-Filled from Commitments)</label>
+                <textarea id="followupAgenda" rows="3" placeholder="Agreed discussion points and deliverables will be pre-filled here..."></textarea>
               </div>
             </div>
 
@@ -304,13 +304,13 @@
           <!-- Contact Profile & Cumulative History -->
           <div class="dossier-detail-pane">
             <div id="dossierHeader" class="dossier-profile-header">
-              <div class="dossier-avatar" id="dossierAvatar">SC</div>
+              <div class="dossier-avatar" id="dossierAvatar">--</div>
               <div class="dossier-meta">
-                <h2 id="dossierContactName">Sarah Connor</h2>
-                <span id="dossierContactEmail">sarah.connor@acme.org</span>
+                <h2 id="dossierContactName">Select a Contact</h2>
+                <span id="dossierContactEmail">Choose a contact to view memory context</span>
                 <div class="dossier-tags">
-                  <span class="tag-pill" id="dossierMemoryCount">4 Memory Records</span>
-                  <span class="tag-pill">Bank: bank_alex_example_com</span>
+                  <span class="tag-pill" id="dossierMemoryCount">0 Memory Records</span>
+                  <span class="tag-pill">Hindsight Cloud</span>
                 </div>
               </div>
             </div>
@@ -323,7 +323,7 @@
                 </div>
                 <div class="card-body">
                   <div id="dossierBriefing" class="dossier-text-content">
-                    Loading relationship history...
+                    Select a contact from the list on the left to recall historical commitments and memory context from Hindsight.
                   </div>
                 </div>
               </div>
