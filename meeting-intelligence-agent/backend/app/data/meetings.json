@@ -1,5 +1,40 @@
 [
   {
+    "meeting_id": "test-live-meet",
+    "client_email": "colleague@example.com",
+    "client_name": "Colleague",
+    "title": "Meeting test-live-meet",
+    "timestamp": "2026-09-28T17:51:13.326694+00:00",
+    "captions": [
+      {
+        "speaker": "Vijay Siddhath",
+        "text": "Hi Alex, we need to finalize the quarterly roadmap and deploy the security patches by Friday.",
+        "timestamp": "2026-09-28T17:51:10.486182+00:00"
+      },
+      {
+        "speaker": "Alex Miller (You)",
+        "text": "Understood Vijay. I will review the pull requests today and guarantee deployment by Thursday 5 PM.",
+        "timestamp": "2026-09-28T17:51:10.510755+00:00"
+      }
+    ],
+    "caption_count": 2,
+    "user_notes": "[Promise: Deploy security patches by Thursday 5 PM]",
+    "summary": "Meeting between User and colleague@example.com. Discussed project architecture, pricing tiers, and next steps.",
+    "promises_by_us": [
+      "Deploy security patches by Thursday 5 PM"
+    ],
+    "promises_by_them": [
+      "colleague@example.com to review submitted proposal and confirm next steps."
+    ],
+    "open_followups": [
+      "Clarify security questionnaire responses and SLA commitments for 99.9% uptime."
+    ],
+    "note_discrepancies": [
+      "Scratchpad notes aligned with spoken topics regarding technical requirements and timelines."
+    ],
+    "suggested_followup_date": "2026-10-06T14:00:00Z"
+  },
+  {
     "meeting_id": "live-meeting",
     "client_email": "colleague@example.com",
     "client_name": "Colleague",

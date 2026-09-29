@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Meeting Intelligence Companion",
+  "name": "RecallixAI Companion",
   "version": "2.0.0",
-  "description": "Zero-Bot Google Meet closed caption ingestion companion for Meeting Intelligence Agent",
+  "description": "Zero-Bot Google Meet closed caption ingestion companion for RecallixAI",
   "permissions": [
     "activeTab",
     "storage"
@@ -24,7 +24,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Meeting Intelligence Companion",
+    "default_title": "RecallixAI Companion",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",

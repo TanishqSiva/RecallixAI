@@ -151,6 +151,10 @@ function switchView(viewName) {
     titleEl.textContent = titles[viewName].title;
     subtitleEl.textContent = titles[viewName].sub;
   }
+
+  if (viewName === "studio") {
+    openCcReminderModal();
+  }
 }
 
 window.switchView = switchView;
@@ -247,7 +251,7 @@ async function syncActiveMeetingStream() {
     if (!session) return;
 
     activeMeetingId = session.meeting_id || "live-meeting";
-    studioMeetingTitle.textContent = session.title || "Live Meeting Studio";
+    studioMeetingTitle.textContent = session.title || "RecallixAI Studio";
     studioMeetingId.textContent = session.meeting_id || "Active Session";
     studioScratchpad.value = session.user_notes || "";
     renderDialogueCaptions(session.captions || []);
@@ -676,6 +680,11 @@ function setupEventListeners() {
     });
   }
 
+  const btnScheduleMeetingForClient = document.getElementById("btnScheduleMeetingForClient");
+  if (btnScheduleMeetingForClient) {
+    btnScheduleMeetingForClient.addEventListener("click", scheduleMeetingForClient);
+  }
+
   if (studioClientSelector) {
     studioClientSelector.addEventListener("change", (e) => {
       activeAttendeeEmail = e.target.value;
@@ -798,6 +807,50 @@ async function saveNewClient() {
     alert("Error saving client: " + err.message);
   }
 }
+
+function scheduleMeetingForClient() {
+  if (!selectedClientObj) {
+    alert("Please select a client first.");
+    return;
+  }
+
+  switchView("schedule");
+
+  activeAttendeeEmail = selectedClientObj.email;
+  if (followupTitle) followupTitle.value = `Meeting with ${selectedClientObj.name}`;
+  if (followupAttendees) followupAttendees.value = selectedClientObj.email;
+  if (followupAgenda) followupAgenda.value = `Discussion points and project roadmap for ${selectedClientObj.name} (${selectedClientObj.company || 'Client'}).`;
+
+  const targetDate = new Date();
+  targetDate.setDate(targetDate.getDate() + 2);
+  targetDate.setHours(14, 0, 0, 0);
+  if (followupDateTime) followupDateTime.value = targetDate.toISOString().slice(0, 16);
+
+  const formCard = document.getElementById("scheduleFormCard");
+  if (formCard) {
+    formCard.scrollIntoView({ behavior: "smooth" });
+  }
+}
+
+function openCcReminderModal() {
+  const modal = document.getElementById("ccReminderModal");
+  if (modal) modal.style.display = "flex";
+}
+
+function closeCcReminderModal() {
+  const modal = document.getElementById("ccReminderModal");
+  if (modal) modal.style.display = "none";
+}
+
+// Bind modal & scheduling functions to window for global inline onclick support
+window.openAddClientModal = openAddClientModal;
+window.closeAddClientModal = closeAddClientModal;
+window.saveNewClient = saveNewClient;
+window.scheduleMeetingForClient = scheduleMeetingForClient;
+window.scheduleFollowUpEvent = scheduleFollowUpEvent;
+window.openCcReminderModal = openCcReminderModal;
+window.closeCcReminderModal = closeCcReminderModal;
+
 
 async function launchInteractiveDemo() {
   const demoClient = await createDemoClientIfNeeded();

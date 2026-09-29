@@ -237,7 +237,7 @@
         
         <!-- On Indicator -->
         <span id="meet-ai-cc-on-indicator" style="display: inline-flex; align-items: center; gap: 4px;">
-          <strong style="color: #4ade80;">⚡ Meeting AI: Listening</strong>
+          <strong style="color: #4ade80;">⚡ RecallixAI: Listening</strong>
           <span id="chipCounter" style="color: #94a3b8; font-size: 11px;">(${capturedSentences} heard)</span>
         </span>
 
@@ -275,7 +275,7 @@
           font-size: 11px;
           border-left: 1px solid #334155;
           padding-left: 8px;
-        ">Dashboard ↗</a>
+        ">RecallixAI Dashboard ↗</a>
       </div>
     `;
     document.body.appendChild(chip);
